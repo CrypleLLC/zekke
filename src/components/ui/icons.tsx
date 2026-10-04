@@ -369,6 +369,15 @@ export function FolderGlyph({ open = false, ...props }: IconProps & { open?: boo
   );
 }
 
+export function BellIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 10a6 6 0 1 1 12 0c0 4.2 1.6 6 2 6.5H4c.4-.5 2-2.3 2-6.5Z" />
+      <path d="M10 19.5a2.2 2.2 0 0 0 4 0" />
+    </Icon>
+  );
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <Icon strokeWidth={1.7} className="h-4 w-4 shrink-0" {...props}>

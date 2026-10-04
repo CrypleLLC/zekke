@@ -18,6 +18,8 @@ export const ERROR_CODES = [
   'USERNAME_UNAVAILABLE',
   'FOLDER_TOO_DEEP',
   'FOLDER_INTO_ITSELF',
+  'PLAN_REQUIRED',
+  'UPGRADE_REQUIRED',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -57,6 +59,14 @@ export class ApiError extends Error {
 
   get isAuthEndpointRejection(): boolean {
     return this.status === 404 && this.code === 'NOT_FOUND';
+  }
+
+  get isUpgradeRequired(): boolean {
+    return this.status === 426;
+  }
+
+  get isPlanRequired(): boolean {
+    return this.status === 403 && this.code === 'PLAN_REQUIRED';
   }
 
   get isRateLimited(): boolean {

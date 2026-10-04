@@ -16,6 +16,14 @@ Endpoints per [front-end-endpoints.md § 8 and § 19](../../../front-end-endpoin
 
 Turning Paranoid on and changing the account PIN are [`lib/oprf`](../oprf/README.md).
 
+## `plan` is what the account may do
+
+`AccountRecord.plan` is the account's entitlement: `code`, `state` (`free`, `active`, `grace`),
+`paid_until`, `renews`, `grace_ends_at`, `storage_quota_bytes`, `retention_days` and `features`.
+**Gate a premium screen on `plan.features`, never on `plan.code`** — the server refuses a missing
+feature with `403 PLAN_REQUIRED` regardless, and what a plan includes can change without a release.
+The plan is not in the JWT; re-read `getMe` after a purchase or a plan notification.
+
 ## `retention_days` says what a delete does
 
 `AccountRecord.retention_days` is how long deleted documents and Drive files wait in the Trash

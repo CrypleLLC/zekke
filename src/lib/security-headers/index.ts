@@ -1,5 +1,6 @@
 export interface SecurityHeaderOptions {
   apiUrl: string;
+  billingUrl?: string;
   objectStoreUrls?: readonly string[];
   development?: boolean;
 }
@@ -40,7 +41,7 @@ function serialize(directives: readonly Directive[]): string {
 }
 
 export function connectSources(options: SecurityHeaderOptions): string[] {
-  const origins = [options.apiUrl, ...(options.objectStoreUrls ?? [])]
+  const origins = [options.apiUrl, ...(options.billingUrl === undefined ? [] : [options.billingUrl]), ...(options.objectStoreUrls ?? [])]
     .map(originOf)
     .filter((origin): origin is string => origin !== undefined);
 

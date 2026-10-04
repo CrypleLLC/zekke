@@ -69,7 +69,7 @@ what was shared before, and re-wrapping does not take that back — the same pro
 
 ## The folders of a friendship — `folders.ts`
 
-[Task 133](../../../../tasks.md#task-133) D10: **every accepted connection is a folder in Shared**,
+[Task 133](../../../../tasks-closed.md#task-133) D10: **every accepted connection is a folder in Shared**,
 named after the other person's current username, and inside it **either side** creates folders and
 files any share on the connection — whoever created the folder, whoever sent the share. The
 friendship folder is the connection itself; only what is inside it is stored, as one sealed

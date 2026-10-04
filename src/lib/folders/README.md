@@ -1,6 +1,6 @@
 # `lib/folders` — folders in every scope
 
-Two shapes, because [Task 133](../../../../tasks.md#task-133) D1 put the tree in a different place per
+Two shapes, because [Task 133](../../../../tasks-closed.md#task-133) D1 put the tree in a different place per
 scope:
 
 - **The sealed manifest** — `secrets` tabs and `notes` spaces — below.
@@ -13,7 +13,7 @@ folders there are, or which item sits in which. It is modelled on
 [`lib/sharing/address-book`](../sharing/README.md): one blob per scope, sealed under a fresh DEK
 wrapped by the scope's KEK, written optimistically on a revision.
 
-This is 133.1 of [Task 133](../../../../tasks.md#task-133). It serves the vault's tabs (`secrets`)
+This is 133.1 of [Task 133](../../../../tasks-closed.md#task-133). It serves the vault's tabs (`secrets`)
 and the spaces in notes (`notes`). `documents` and `files` keep their tree in a table instead
 (133.3), and the Shared space reuses the pure half of this module under a per-connection key
 (133.4, [`lib/sharing/folders.ts`](../sharing/README.md#the-folders-of-a-friendship--foldersts)).

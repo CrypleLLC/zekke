@@ -2,7 +2,7 @@
 
 Deleted documents, Drive files and their folders wait in the Trash for the account's
 `retention_days` (`GET /users/me`), then `reconcile` destroys them
-([Task 133](../../../../tasks.md#task-133) D7). `0` keeps nothing: the Trash is always empty and a
+([Task 133](../../../../tasks-closed.md#task-133) D7). `0` keeps nothing: the Trash is always empty and a
 delete is final. The Vault and Passwords keep their own *Recently deleted*; this module is for the
 two scopes whose folders are rows on the server.
 

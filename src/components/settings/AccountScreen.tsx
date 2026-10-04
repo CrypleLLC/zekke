@@ -9,13 +9,15 @@ import {
   accountPinRefusal,
   checkMnemonic,
   mnemonicSentence,
+  PLAN_COPY,
 } from '@/lib/app';
 import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
 import { Button, Card, Notice, PinField, TextArea } from '@/components/ui';
+import { ManageSubscriptionButton } from '@/components/plan/PlanScreen';
 
 export default function AccountScreen() {
   const context = useAuthedContext();
-  const { paranoid, fullDevice, services, reportError, enterVault } = useZekke();
+  const { paranoid, fullDevice, services, reportError, enterVault, account } = useZekke();
   const [mnemonic, setMnemonic] = useState('');
   const [pin, setPin] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -64,6 +66,16 @@ export default function AccountScreen() {
     <Card title={ACCOUNT_COPY.deleteTitle} subtitle={ACCOUNT_COPY.deleteSummary}>
       <div className="space-y-4">
         <Notice tone="danger">{ACCOUNT_COPY.deleteWarning}</Notice>
+        {account?.plan.renews ? (
+          <Notice tone="warning">
+            <span className="flex flex-col gap-3">
+              <span>{PLAN_COPY.deleteRenews}</span>
+              <span>
+                <ManageSubscriptionButton onError={setMessage} />
+              </span>
+            </span>
+          </Notice>
+        ) : null}
         {message ? (
           <Notice tone="danger" onDismiss={() => setMessage(undefined)}>
             {message}
