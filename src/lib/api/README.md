@@ -97,6 +97,15 @@ without the code would be a server that stopped answering the way this route is 
 `/devices/enrol` and `/devices/enrol/chain` join the auth routes whose `404` is the one generic
 sign-in message.
 
+## Identifying the client
+
+`identifyClient(platform, version)` makes every later request carry
+`Zekke-Client: <platform>/<version>` (`CLIENT_HEADER`); `forgetClientIdentity()` undoes it. Only the
+browser extension and the mobile apps call it, once at start. **The web app never does**: a custom
+header would turn every request into a CORS preflight, and the deployed build is always current. A
+version below the minimum gets `426`, `ApiError.isUpgradeRequired`; `isPlanRequired` is the `403
+PLAN_REQUIRED` of a premium route. See [`lib/clients`](../clients/README.md).
+
 ## Optional fields
 
 Optional fields are **absent, never `null`**. Types use `?` / `| undefined`, and checks use

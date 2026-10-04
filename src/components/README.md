@@ -25,6 +25,7 @@ Domains — one folder each:
 | [`session`](./session/README.md)     | The session provider, the gate, onboarding and unlock                      |
 | [`home`](./home/README.md)           | The Home screen: every section as an app icon                              |
 | [`shell`](./shell/README.md)         | The sidebar shell, navigation, account menu, storage meter, staging banner |
+| [`plan`](./plan/README.md)         | The Plan tab, the Bitcoin checkout, the grace warning and the return from Stripe |
 | [`vault`](./vault/README.md)         | The Vault, and the show/hide-values toggle                                 |
 | [`passwords`](./passwords/README.md) | The Passwords tab                                                          |
 | [`notes`](./notes/README.md)         | The notes grid and the note editor                                         |

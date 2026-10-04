@@ -28,6 +28,9 @@ can be unit-tested under the existing node-environment Vitest setup; the React c
 | `clipboard.ts`     | Copying a secret, and clearing it off the clipboard afterwards                                                                                                                                                                                                                                                                                   |
 | `pin-entry.ts`     | The six-box PIN entry: typing, pasting, backspace and arrows over one contiguous value ([One box per digit](#one-box-per-digit--pin-entryts))                                                                                                                                                                                                    |
 | `secret-field.ts`  | Masking a secret or a PIN while it is typed, without turning it into a password field                                                                                                                                                                                                                                                            |
+| `notifications.ts` | The sentence, tone and age of each notification kind (`notificationView`), plan names, and the bell's labels. Every parameter is optional and a wrong type is ignored, so a missing value shortens a sentence and never prints `undefined`; an unknown kind becomes a generic notice |
+| `build.ts` | Whether this tab runs an older deploy than the server: the build id `next.config.ts` pins into every bundle, compared with `/build-id` |
+| `plan.ts` | The Plan tab's sentences and view models: plan summary, prices by plan, the grace warning (`graceView`), the quote countdown, billing refusals in words, and reading the return from Stripe |
 
 ## Plaintext the browser would otherwise send away
 

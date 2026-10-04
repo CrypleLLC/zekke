@@ -43,7 +43,7 @@ into a new pin. See `lib/sharing/README.md` § Checking a connection against its
 
 ### One folder per friendship
 
-[Task 133](../../../../tasks.md#task-133) D10. The Shared screen opens on **one folder per accepted
+[Task 133](../../../../tasks-closed.md#task-133) D10. The Shared screen opens on **one folder per accepted
 connection**, named after the other person's current username — each side sees the other's name.
 A pending invitation has none. Opening one shows that friendship's space:
 

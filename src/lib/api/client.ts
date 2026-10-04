@@ -30,6 +30,29 @@ export interface RequestOptions {
   maxBodyBytes?: number;
 }
 
+export const CLIENT_HEADER = 'Zekke-Client';
+
+export type ClientPlatform = 'ios' | 'android' | 'extension';
+
+const VERSION_PATTERN = /^(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$/;
+
+let clientIdentity: string | undefined;
+
+export function identifyClient(platform: ClientPlatform, version: string): void {
+  if (!VERSION_PATTERN.test(version)) {
+    throw new Error(`client version must be semantic (1.2.3), got "${version}"`);
+  }
+  clientIdentity = `${platform}/${version}`;
+}
+
+export function forgetClientIdentity(): void {
+  clientIdentity = undefined;
+}
+
+export function isSemanticVersion(value: string): boolean {
+  return VERSION_PATTERN.test(value);
+}
+
 export function getBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_BASE_API_URL?.trim();
   const base = configured && configured.length > 0 ? configured : DEFAULT_BASE_URL;
@@ -95,6 +118,9 @@ export async function request<T = unknown>(
   }
   if (token !== undefined) {
     headers.Authorization = `Bearer ${token}`;
+  }
+  if (clientIdentity !== undefined) {
+    headers[CLIENT_HEADER] = clientIdentity;
   }
 
   let response: Response;

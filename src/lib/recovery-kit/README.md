@@ -10,7 +10,7 @@ it touches the network.
 | `recoveryKitContent(input)`         | Everything the page prints, as data — the single source the PDF draws from                                                      |
 | `recoveryKitPhrase(mnemonic)`       | The checksum-validated, single-spaced phrase; throws on an invalid one                                                          |
 | `recoveryKitQrModules(payload)`     | The QR matrix, quiet zone included                                                                                              |
-| `qrModulePath(modules)`             | The matrix as one SVG path, one rectangle per horizontal run                                                                    |
+| `qrModulePath(modules)`             | The matrix as one SVG path, one rectangle per horizontal run — re-exported from [`lib/qr`](../qr/README.md), which the Bitcoin checkout shares |
 | `recoveryKitGridCell(index, count)` | Where a word sits in the phrase grid                                                                                            |
 | `recoveryKitWordOutlines(word)`     | A word as one glyph outline per letter, each with its advance; throws `RecoveryKitGlyphError` on a letter it has no outline for |
 | `recoveryKitFileName(username)`     | `zekke-recovery-kit-<username>.pdf`                                                                                             |

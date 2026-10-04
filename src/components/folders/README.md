@@ -1,6 +1,6 @@
 # `components/folders`
 
-[Task 133](../../../../tasks.md#task-133). Two components, because the two shapes of folder behave
+[Task 133](../../../../tasks-closed.md#task-133). Two components, because the two shapes of folder behave
 differently: a tab is flat and holds everything of one kind, a folder nests like an operating
 system's.
 

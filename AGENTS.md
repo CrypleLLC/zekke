@@ -114,7 +114,10 @@ action  = <challenge> ":" <timestamp> ":" <action> [":" <arg> …]     SHA-256, 
   on creates. Never auto-retry an OPRF evaluation: each is an attempt.
 - **Public endpoints have a 350 ms response floor.** Never use timings as a signal; never set
   timeouts below ~2 s.
-- **No custom request headers**, and never `credentials: "include"`.
+- **No custom request headers**, and never `credentials: "include"`. `lib/api`'s `identifyClient`
+  adds `Zekke-Client` for the browser extension and the mobile apps; the web app never calls it.
+- **A stale tab learns about a new deploy** from `/build-id` (`components/shell/NewVersionNotice`);
+  `next.config.ts` pins one build id per build — set `ZEKKE_BUILD_ID` to choose it.
 - **1 MiB body cap** (8 MiB on documents). Budget ~700 KiB of plaintext per secret.
 - **Follow `next_cursor` until `has_more` is `false`.** Cursors are opaque. Hash the ciphertext
   you received rather than trusting `ciphertext_sha256`.
@@ -144,9 +147,14 @@ action  = <challenge> ":" <timestamp> ":" <action> [":" <arg> …]     SHA-256, 
 - **Every response carries a Content Security Policy** from `src/lib/security-headers`. A new
   host goes into it deliberately, never as a wildcard.
 - Path alias `@/*` → `./src/*`. TypeScript `strict` is on.
+- `NEXT_PUBLIC_BILLING_URL` points at the billing service (default `http://localhost:8070`); the
+  CSP's `connect-src` gains its origin. Stripe's checkout and portal are full-page navigations and
+  need nothing in the policy.
 - `NEXT_PUBLIC_BASE_API_URL` points at the API root, with no version prefix; default
   `http://localhost:8080`.
-- **Free vs Premium gating: do not build any.** The API has no tier concept.
+- **Gate premium features on `account.plan.features`, never on `plan.code`.** The server refuses a
+  missing feature with `403 PLAN_REQUIRED` regardless; what a plan includes can change without a
+  release. Buying is the Plan tab in Settings (`components/plan`, `lib/billing`).
 
 ## Commands
 

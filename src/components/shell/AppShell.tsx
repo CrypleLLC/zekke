@@ -11,11 +11,16 @@ import {
   type SessionExitId,
   lockExit,
   removeBrowserExit,
+  type SettingsTabId,
 } from '@/lib/app';
 import { useZekke } from '@/components/session/ZekkeProvider';
 import NotesScreen from '@/components/notes/NotesScreen';
 import PasswordsScreen from '@/components/passwords/PasswordsScreen';
 import AccountMenu from './AccountMenu';
+import NotificationBell from './NotificationBell';
+import NewVersionNotice from './NewVersionNotice';
+import CheckoutReturnNotice from '@/components/plan/CheckoutReturnNotice';
+import GraceNotice from '@/components/plan/GraceNotice';
 import SharedScreen from '@/components/sharing/SharedScreen';
 import SettingsModal from '@/components/settings/SettingsModal';
 import VaultScreen from '@/components/vault/VaultScreen';
@@ -164,7 +169,7 @@ export default function AppShell() {
   );
   const [tab, setTab] = useState<TabId>(navItems[0]?.id as TabId);
   const [confirming, setConfirming] = useState<SessionExit>();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTabId | 'closed'>('closed');
   const [exitError, setExitError] = useState<string>();
   const [chainProblemDismissed, setChainProblemDismissed] = useState(false);
   const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
@@ -235,10 +240,11 @@ export default function AppShell() {
                 <div className="flex shrink-0 items-center gap-2">
                   {ScreenActions ? <ScreenActions /> : null}
                   {lockable ? <LockButton exit={lockable} onRun={run} /> : null}
+                  <NotificationBell />
                   <AccountMenu
                     username={account?.username}
                     logOut={leave}
-                    onSettings={() => setSettingsOpen(true)}
+                    onSettings={() => setSettingsTab('sharing')}
                     onLogOut={run}
                   />
                 </div>
@@ -254,10 +260,11 @@ export default function AppShell() {
                 <div className="flex shrink-0 items-center gap-2">
                   {ScreenActions ? <ScreenActions /> : null}
                   {lockable ? <LockButton exit={lockable} onRun={run} /> : null}
+                  <NotificationBell />
                   <AccountMenu
                     username={account?.username}
                     logOut={leave}
-                    onSettings={() => setSettingsOpen(true)}
+                    onSettings={() => setSettingsTab('sharing')}
                     onLogOut={run}
                   />
                 </div>
@@ -267,6 +274,9 @@ export default function AppShell() {
           </div>
 
           <main className={`mx-auto w-full ${measure} flex flex-1 flex-col gap-8 p-4 md:p-6`}>
+            <NewVersionNotice />
+            <CheckoutReturnNotice />
+            <GraceNotice onSeePlans={() => setSettingsTab('plan')} />
             {chainProblem && !chainProblemDismissed ? (
               <Notice tone="danger" onDismiss={() => setChainProblemDismissed(true)}>
                 {chainProblem}
@@ -305,7 +315,9 @@ export default function AppShell() {
             </ScreenStripSlotProvider>
           </main>
 
-          {settingsOpen ? <SettingsModal onClose={() => setSettingsOpen(false)} /> : null}
+          {settingsTab !== 'closed' ? (
+            <SettingsModal initialTab={settingsTab} onClose={() => setSettingsTab('closed')} />
+          ) : null}
         </div>
 
         <div ref={setPanelSlot} className="contents" />

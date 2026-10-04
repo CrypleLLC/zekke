@@ -95,6 +95,17 @@ describe("connectSources", () => {
   });
 });
 
+describe("connectSources with billing", () => {
+  it("adds the billing service's origin, and nothing for Stripe's checkout", () => {
+    expect(connectSources({ ...options, billingUrl: "https://billing.zekke.example/x" })).toEqual([
+      "'self'",
+      "https://api.zekke.example",
+      "https://billing.zekke.example",
+      "https://account.r2.cloudflarestorage.com",
+    ]);
+  });
+});
+
 describe("contentSecurityPolicy", () => {
   it("never allows a wildcard or a bare scheme that would let data reach any host", () => {
     const policy = contentSecurityPolicy(options);
