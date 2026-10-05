@@ -53,6 +53,7 @@ export interface StorageUsage {
   stored_bytes: number;
   quota_bytes: number;
   file_count: number;
+  attachment_bytes?: number;
 }
 
 export interface CompletedPart {

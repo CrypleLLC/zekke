@@ -13,12 +13,19 @@ import {
   documentPreview,
   documentTitle,
   editedLabel,
+  saveIndicator,
+  saveIndicatorLabel,
   saveStatusLabel,
+  UNTITLED_SPREADSHEET,
+  capacityRefusalMessage,
+  snapshotCapacityMessage,
 } from './documents';
+import { SNAPSHOT_RAW_BYTES_LIMIT } from '@/lib/spreadsheets/capacity';
 
 function summary(overrides: Partial<DocumentSummary> = {}): DocumentSummary {
   return {
     id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+    kind: 'document',
     title: 'Quarterly letter',
     preview: 'To whoever is reading this…',
     updatedAt: '2026-08-11T12:00:00Z',
@@ -125,6 +132,44 @@ describe('links and counts', () => {
   });
 });
 
+describe('the save indicator', () => {
+  const saved = { status: 'synced' as const, pending: 0, uploading: false, gapDetected: false };
+
+  it('is green once everything written has been saved and nothing changed since', () => {
+    expect(saveIndicator(saved)).toBe('saved');
+    expect(saveIndicatorLabel(saved)).toBe('All changes saved');
+  });
+
+  it('turns red as soon as there is a change the server does not have yet', () => {
+    const waiting = { ...saved, status: 'saving' as const, pending: 1 };
+    expect(saveIndicator(waiting)).toBe('unsaved');
+    expect(saveIndicatorLabel(waiting)).toBe('Changes not saved yet');
+  });
+
+  it('is orange while the changes are on their way to the server', () => {
+    const sending = { ...saved, status: 'saving' as const, pending: 1, uploading: true };
+    expect(saveIndicator(sending)).toBe('saving');
+    expect(saveIndicatorLabel(sending)).toBe('Saving…');
+  });
+
+  it('stays red while offline with changes kept on the device, or when sync is paused', () => {
+    const offline = { ...saved, status: 'offline' as const, pending: 2 };
+    expect(saveIndicator(offline)).toBe('unsaved');
+    expect(saveIndicatorLabel(offline)).toBe('Offline — 2 changes kept on this device');
+    expect(saveIndicator({ ...saved, status: 'error' })).toBe('unsaved');
+    expect(saveIndicator({ ...saved, gapDetected: true })).toBe('unsaved');
+  });
+
+  it('is green offline when nothing is waiting', () => {
+    expect(saveIndicator({ ...saved, status: 'offline' })).toBe('saved');
+  });
+
+  it('is neutral while the document is still opening', () => {
+    expect(saveIndicator({ ...saved, status: 'loading' })).toBe('opening');
+    expect(saveIndicator({ ...saved, status: 'idle' })).toBe('opening');
+  });
+});
+
 describe('document counts', () => {
   it('pluralizes words, characters and pages', () => {
     expect(documentCountsLabel(1, 1, 1)).toBe('1 word · 1 character · 1 page');
@@ -133,6 +178,10 @@ describe('document counts', () => {
 
   it('reports at least one page for an empty document', () => {
     expect(documentCountsLabel(0, 0, 0)).toBe('0 words · 0 characters · 1 page');
+  });
+
+  it('leaves the pages out when there are none to count, as in the continuous view', () => {
+    expect(documentCountsLabel(2, 9)).toBe('2 words · 9 characters');
   });
 
   it('groups thousands so a long document stays readable', () => {
@@ -187,5 +236,49 @@ describe('document thumbnails', () => {
 
     expect(tile.thumbnail.length).toBeGreaterThan(tile.preview.length);
     expect(tile.thumbnail).toContain('\n');
+  });
+});
+
+describe('spreadsheets in the documents list', () => {
+  it('open on their own route and fall back to their own untitled label', () => {
+    expect(documentHref('abc', 'spreadsheet')).toBe('/sheets/abc');
+    expect(documentHref('abc')).toBe('/docs/abc');
+    expect(documentTitle('  ', 'spreadsheet')).toBe(UNTITLED_SPREADSHEET);
+    const [tile] = buildDocumentTiles([summary({ kind: 'spreadsheet', title: '', grid: [['a', '1']] })]);
+    expect(tile).toMatchObject({ kind: 'spreadsheet', title: UNTITLED_SPREADSHEET, grid: [['a', '1']] });
+  });
+
+  it('drop the grid of a spreadsheet that did not decrypt', () => {
+    const [tile] = buildDocumentTiles([summary({ kind: 'spreadsheet', readable: false, grid: [['a']] })]);
+    expect(tile.grid).toBeUndefined();
+  });
+});
+
+describe('capacity messages', () => {
+  it('names how much would still fit', () => {
+    const message = capacityRefusalMessage({
+      reason: 'workbook-full',
+      usedBytes: SNAPSHOT_RAW_BYTES_LIMIT - 30_000,
+      addedBytes: 300_000,
+      limitBytes: SNAPSHOT_RAW_BYTES_LIMIT,
+    });
+    expect(message).toContain('about 1,000 more cells');
+    expect(message).toContain('about 10,000');
+    expect(message).toContain('Nothing was changed');
+  });
+
+  it('says a full spreadsheet is full, and a large cell is a large cell', () => {
+    expect(
+      capacityRefusalMessage({ reason: 'workbook-full', usedBytes: 100, addedBytes: 10, limitBytes: 100 }),
+    ).toContain('is full');
+    expect(
+      capacityRefusalMessage({ reason: 'cell-too-large', usedBytes: 0, addedBytes: 10, limitBytes: 100 }),
+    ).toContain('too large');
+  });
+
+  it('warns near the snapshot ceiling and explains past it', () => {
+    expect(snapshotCapacityMessage('ok')).toBeUndefined();
+    expect(snapshotCapacityMessage('near')).toContain('close to');
+    expect(snapshotCapacityMessage('over')).toContain('can no longer be compacted');
   });
 });

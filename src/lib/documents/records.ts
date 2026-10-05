@@ -2,7 +2,19 @@ export const DOCUMENT_VERSION = 'v1';
 export const MAX_UPDATES_PER_REQUEST = 256;
 export const MAX_UPDATE_CHARACTERS = 262144;
 export const DOCUMENT_MAX_BODY_BYTES = 8 * 1024 * 1024;
-export const SNAPSHOT_CIPHERTEXT_BUDGET = 6 * 1024 * 1024;
+export const SNAPSHOT_ENVELOPE_CHARACTERS = 1024;
+export const MAX_SNAPSHOT_CHARACTERS = DOCUMENT_MAX_BODY_BYTES - SNAPSHOT_ENVELOPE_CHARACTERS;
+export const SNAPSHOT_NEAR_FRACTION = 0.85;
+
+export class SnapshotTooLargeError extends Error {
+  constructor(readonly characters: number) {
+    super(
+      `the sealed snapshot is ${characters} characters, over the ${MAX_SNAPSHOT_CHARACTERS} the server accepts — ` +
+        'the document can still be edited, but it can no longer be compacted',
+    );
+    this.name = 'SnapshotTooLargeError';
+  }
+}
 
 export interface DocumentMetaRecord {
   id: string;

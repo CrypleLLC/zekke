@@ -13,6 +13,7 @@ import {
   type ItemRecipientRecord,
   type ItemType,
 } from '@/lib/sharing';
+import { compactForAnchor } from '@/lib/documents';
 import { placeItem } from '@/lib/folders';
 import {
   ITEM_LABELS,
@@ -93,6 +94,9 @@ export default function ShareItemDialog({
     setMessage(undefined);
 
     try {
+      if (itemType === 'document') {
+        await compactForAnchor(context, itemId);
+      }
       const share = await shareItemById(context, connection, itemType, itemId);
       if (folder !== '') {
         await editSharedFolders(context, connection, placeItem(share.id, folder));

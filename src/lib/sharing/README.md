@@ -175,6 +175,14 @@ decrypted, re-encrypted and uploaded again, and counts against the recipient's q
 copies its last saved snapshot, and refuses (`NothingToCopyError`) when there is none. The copy
 survives the original being deleted or unshared.
 
+**A document's images come with it.** They are attachments of the owner's document, read by the
+recipient through the share while it lasts ([`lib/documents/attachments`](../documents/attachments/README.md#copying-a-shared-document)).
+The copy gives every image a new id in the snapshot (`remapAttachments`), checks the images fit in
+the recipient's storage **before** creating anything, creates the document, then asks the server to
+copy the objects without reading them. A refusal there — the quota moved in between — deletes the
+document just made and is `SharedImagesQuotaError`, which the Shared screen words as the images not
+fitting; the keys travel inside the snapshot, unchanged.
+
 ## What the UI must never claim
 
 - **Re-sharing cannot be prevented.** Anything readable can be copied, which is why copying is a

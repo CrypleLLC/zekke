@@ -4,11 +4,17 @@ import type { DocumentsContext } from './api';
 import { readBodyText, readTitle } from './content';
 import type { DocumentMetaRecord } from './records';
 import { DocumentSync } from './sync';
+import { readFirstPage, type FirstPage } from './miniature';
+import { isSpreadsheet } from '@/lib/spreadsheets/layout';
+import { readSheetPreview } from '@/lib/spreadsheets/preview';
 
 export const SUMMARY_FETCH_CONCURRENCY = 4;
 
+export type DocumentKind = 'document' | 'spreadsheet';
+
 export interface DocumentSummary {
   id: string;
+  kind: DocumentKind;
   title: string;
   preview: string;
   updatedAt: string;
@@ -19,6 +25,8 @@ export interface DocumentSummary {
   readable: boolean;
   bytes?: number;
   failure?: string;
+  grid?: string[][];
+  firstPage?: FirstPage;
 }
 
 export async function loadDocumentSummary(
@@ -38,16 +46,21 @@ export async function loadDocumentSummary(
 
   try {
     await sync.open();
+    const spreadsheet = isSpreadsheet(sync.doc);
     return {
       ...base,
+      kind: spreadsheet ? 'spreadsheet' : 'document',
       title: readTitle(sync.doc),
-      preview: readBodyText(sync.doc),
+      preview: spreadsheet ? '' : readBodyText(sync.doc),
+      grid: spreadsheet ? readSheetPreview(sync.doc) : undefined,
+      firstPage: spreadsheet ? undefined : readFirstPage(sync.doc),
       readable: true,
       bytes: Y.encodeStateAsUpdate(sync.doc).byteLength,
     };
   } catch (error) {
     return {
       ...base,
+      kind: 'document',
       title: '',
       preview: '',
       readable: false,

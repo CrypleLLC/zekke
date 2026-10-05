@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   NothingToCopyError,
+  SharedImagesQuotaError,
   copySharedItem,
   describeReceived,
   describeSent,
@@ -399,7 +400,13 @@ function SpaceContents({
       await copySharedItem(context, connection, { id: item.shareId, item_type: item.itemType });
       setNotice(SHARING_COPY.copied);
     } catch (error) {
-      setMessage(error instanceof NothingToCopyError ? SHARING_COPY.nothingToCopy : reportError(error));
+      setMessage(
+        error instanceof NothingToCopyError
+          ? SHARING_COPY.nothingToCopy
+          : error instanceof SharedImagesQuotaError
+            ? SHARING_COPY.imagesOverQuota
+            : reportError(error),
+      );
     } finally {
       setBusy(false);
     }

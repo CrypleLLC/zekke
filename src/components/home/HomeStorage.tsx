@@ -58,7 +58,15 @@ export default function HomeStorage() {
       </h2>
 
       <dl className="grid grid-cols-3 gap-4">
-        <StorageFact label="Used" value={bar.usedLabel} detail={usedShareLabel(usage)} />
+        <StorageFact
+          label="Used"
+          value={bar.usedLabel}
+          detail={
+            bar.imagesSummary === undefined
+              ? usedShareLabel(usage)
+              : `${usedShareLabel(usage)}, ${bar.imagesSummary}`
+          }
+        />
         <StorageFact
           label="Free"
           value={formatBytes(freeBytes(usage))}

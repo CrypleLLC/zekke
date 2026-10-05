@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeHeadingPos, outlineTree, type OutlineEntry } from './outline';
+import { headingAtScroll, outlineTree, type HeadingOffset, type OutlineEntry } from './outline';
 
 function heading(pos: number, level: number, text = ''): OutlineEntry {
   return { pos, level, text };
@@ -47,22 +47,43 @@ describe('outline tree', () => {
   });
 });
 
-describe('active heading', () => {
-  const entries = [heading(0, 1), heading(10, 2), heading(30, 2)];
+describe('the heading at the scroll position', () => {
+  const headings: HeadingOffset[] = [
+    { pos: 0, top: -900 },
+    { pos: 10, top: -200 },
+    { pos: 30, top: 400 },
+    { pos: 50, top: 1500 },
+  ];
+  const middle = { readingLine: 150, viewportBottom: 1000, atBottom: false };
 
-  it('is the last heading at or before the cursor', () => {
-    expect(activeHeadingPos(entries, 20)).toBe(10);
+  it('is the last heading that has scrolled past the reading line', () => {
+    expect(headingAtScroll(headings, middle)).toBe(10);
   });
 
-  it('is the heading itself when the cursor sits on it', () => {
-    expect(activeHeadingPos(entries, 10)).toBe(10);
+  it('switches as soon as the next heading reaches the reading line', () => {
+    const reached = headings.map((heading) => (heading.pos === 30 ? { ...heading, top: 150 } : heading));
+    expect(headingAtScroll(reached, middle)).toBe(30);
   });
 
-  it('is undefined while the cursor is above the first heading', () => {
-    expect(activeHeadingPos([heading(5, 1)], 2)).toBeUndefined();
+  it('is the first heading while it is on screen and nothing has passed the line yet', () => {
+    expect(
+      headingAtScroll([{ pos: 4, top: 300 }, { pos: 20, top: 700 }], middle),
+    ).toBe(4);
   });
 
-  it('is undefined when there are no headings', () => {
-    expect(activeHeadingPos([], 100)).toBeUndefined();
+  it('is nothing while the first heading is still below the screen', () => {
+    expect(headingAtScroll([{ pos: 4, top: 1200 }], middle)).toBeUndefined();
+  });
+
+  it('is the last heading on screen once the page cannot scroll further', () => {
+    const bottom = { readingLine: 150, viewportBottom: 1000, atBottom: true };
+    expect(headingAtScroll(headings, bottom)).toBe(30);
+    expect(
+      headingAtScroll([...headings.slice(0, 3), { pos: 50, top: 900 }], bottom),
+    ).toBe(50);
+  });
+
+  it('is nothing when there are no headings', () => {
+    expect(headingAtScroll([], middle)).toBeUndefined();
   });
 });
