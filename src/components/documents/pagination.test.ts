@@ -7,6 +7,8 @@ import {
   documentPageCount,
   isPaginated,
   markPaginated,
+  markRemeasure,
+  paginationRevision,
   paginationKey,
   paginationPlugin,
 } from './pagination';
@@ -68,5 +70,23 @@ describe('pagination on and off', () => {
   it('is not an undoable edit', () => {
     const state = stateWith(true);
     expect(markPaginated(state.tr, false).getMeta('addToHistory')).toBe(false);
+  });
+});
+
+describe('remeasuring after the page geometry changes', () => {
+  it('bumps a revision the measuring view watches, and keeps what was measured until then', () => {
+    const paged = measured(stateWith(true), 2);
+    const bumped = paged.apply(markRemeasure(paged.tr));
+    expect(paginationRevision(bumped)).toBe(paginationRevision(paged) + 1);
+    expect(documentPageCount(bumped)).toBe(2);
+    expect(markRemeasure(paged.tr).getMeta('addToHistory')).toBe(false);
+  });
+
+  it('carries the revision through a measurement and a mode switch', () => {
+    const bumped = stateWith(true).apply(markRemeasure(stateWith(true).tr));
+    const remeasured = measured(bumped, 3);
+    expect(paginationRevision(remeasured)).toBe(1);
+    const continuous = remeasured.apply(markPaginated(remeasured.tr, false));
+    expect(paginationRevision(continuous)).toBe(1);
   });
 });

@@ -78,6 +78,7 @@ import {
 } from '@/components/folders/FolderBrowser';
 import { FolderDetailsPanel } from '@/components/folders/FolderDetailsPanel';
 import { PanelFacts } from '@/components/shell/SidePanel';
+import DocumentMiniature from './DocumentMiniature';
 
 export default function DocumentsScreen() {
   const context = useAuthedContext();
@@ -578,6 +579,8 @@ function DocumentFile({
     >
       {tile.kind === 'spreadsheet' ? (
         <SheetMiniature tile={tile} textPixels={textPixels} titlePixels={titlePixels} />
+      ) : tile.firstPage !== undefined ? (
+        <DocumentMiniature documentId={tile.id} page={tile.firstPage} />
       ) : (
       <span className="block px-[12%] py-[8.5%]">
         {tile.title !== UNTITLED_DOCUMENT && (

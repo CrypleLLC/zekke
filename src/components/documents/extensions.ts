@@ -17,7 +17,12 @@ import {
   styleAttribute,
 } from '@/lib/document-styles';
 import { PageBreak } from './pageBreak';
+import { ColouredTableCell, ColouredTableHeader, RowResizing, SizedTableRow } from './tableRows';
+import { TableHandle } from './tableHandle';
+import { ColumnResizing, FittedTableView } from './tableColumns';
 import { Pagination } from './pagination';
+import { DocumentImage } from './imageNode';
+import type { DocumentImageHost } from './imageHost';
 
 export const BODY_PLACEHOLDER = 'Start writing…';
 
@@ -68,7 +73,10 @@ const GuardedHighlight = Highlight.extend({
   },
 });
 
-export function documentExtensions(doc: Y.Doc, options: { paginated?: boolean } = {}) {
+export function documentExtensions(
+  doc: Y.Doc,
+  options: { paginated?: boolean; images?: DocumentImageHost } = {},
+) {
   return [
     StarterKit.configure({
       undoRedo: false,
@@ -84,8 +92,20 @@ export function documentExtensions(doc: Y.Doc, options: { paginated?: boolean } 
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    TableKit.configure({ table: { resizable: true } }),
+    TableKit.configure({
+      table: { resizable: false, View: FittedTableView, allowTableNodeSelection: true },
+      tableRow: false,
+      tableCell: false,
+      tableHeader: false,
+    }),
+    SizedTableRow,
+    ColouredTableCell,
+    ColouredTableHeader,
+    RowResizing,
+    ColumnResizing,
+    TableHandle,
     PageBreak,
+    DocumentImage.configure({ host: options.images }),
     Pagination.configure({ paginated: options.paginated ?? true }),
     CharacterCount,
     Selection,

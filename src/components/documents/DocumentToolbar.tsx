@@ -6,6 +6,8 @@ import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import { PRIVATE_TEXT_PROPS, type DocumentView } from '@/lib/app';
 import { UndoIcon } from '@/components/ui/icons';
+import { TableMenu } from './TableMenu';
+import { useToolMenu } from './useToolMenu';
 import {
   DEFAULT_FONT_SIZE,
   DEFAULT_LINE_HEIGHT,
@@ -17,8 +19,10 @@ import {
   HIGHLIGHT_COLORS,
   LINE_HEIGHTS,
   TEXT_COLORS,
+  TEXT_COLOR_COLUMNS,
   fontSizeFromInput,
   fontSizePixels,
+  pickerColor,
   safeFontFamily,
   stepFontSize,
 } from '@/lib/document-styles';
@@ -36,7 +40,10 @@ const ALIGNMENTS = ['left', 'center', 'right', 'justify'] as const;
 type MarkName = (typeof MARKS)[number];
 
 const MARK_BUTTONS: Record<MarkName, { label: string; glyph: ReactNode }> = {
-  bold: { label: 'Bold', glyph: <span className="text-sm font-bold leading-none">B</span> },
+  bold: {
+    label: 'Bold',
+    glyph: <span className="text-sm font-bold leading-none">B</span>,
+  },
   italic: {
     label: 'Italic',
     glyph: <span className="font-serif text-sm italic leading-none">I</span>,
@@ -49,7 +56,10 @@ const MARK_BUTTONS: Record<MarkName, { label: string; glyph: ReactNode }> = {
     label: 'Strikethrough',
     glyph: <span className="text-sm leading-none line-through">S</span>,
   },
-  code: { label: 'Inline code', glyph: <span className="font-mono text-xs leading-none">{'{}'}</span> },
+  code: {
+    label: 'Inline code',
+    glyph: <span className="font-mono text-xs leading-none">{'{}'}</span>,
+  },
 };
 
 export default function DocumentToolbar({
@@ -57,11 +67,23 @@ export default function DocumentToolbar({
   baseFont,
   view,
   onViewChange,
+  rulersShown,
+  onRulersShownChange,
+  docked = false,
+  inline = false,
+  onInsertImage,
+  onPrint,
 }: {
   editor: Editor | null;
   baseFont: string;
   view: DocumentView;
   onViewChange: (view: DocumentView) => void;
+  rulersShown: boolean;
+  onRulersShownChange: (shown: boolean) => void;
+  docked?: boolean;
+  inline?: boolean;
+  onInsertImage?: () => void;
+  onPrint?: () => void;
 }) {
   const state = useEditorState({
     editor,
@@ -77,13 +99,22 @@ export default function DocumentToolbar({
         headingLevel: headingLevel(active),
         fontFamily: (active.getAttributes('textStyle').fontFamily as string | undefined) ?? null,
         fontSize: (active.getAttributes('textStyle').fontSize as string | undefined) ?? null,
+        textColor: (active.getAttributes('textStyle').color as string | undefined) ?? null,
+        cellColor:
+          (active.getAttributes('tableCell').backgroundColor as string | undefined) ??
+          (active.getAttributes('tableHeader').backgroundColor as string | undefined) ??
+          null,
+        highlightColor: active.isActive('highlight')
+          ? ((active.getAttributes('highlight').color as string | undefined) ?? null)
+          : null,
         lineHeight:
           (active.getAttributes('paragraph').lineHeight as string | undefined) ??
           (active.getAttributes('heading').lineHeight as string | undefined) ??
           null,
-        marks: Object.fromEntries(
-          MARKS.map((mark) => [mark, active.isActive(mark)]),
-        ) as Record<MarkName, boolean>,
+        marks: Object.fromEntries(MARKS.map((mark) => [mark, active.isActive(mark)])) as Record<
+          MarkName,
+          boolean
+        >,
         alignments: Object.fromEntries(
           ALIGNMENTS.map((alignment) => [alignment, active.isActive({ textAlign: alignment })]),
         ) as Record<(typeof ALIGNMENTS)[number], boolean>,
@@ -108,7 +139,9 @@ export default function DocumentToolbar({
     <div
       role="toolbar"
       aria-label="Formatting"
-      className="zekke-no-print flex flex-wrap items-center gap-1 px-3 py-1.5"
+      className={`zekke-no-print flex items-center gap-1 py-1.5 ${inline ? 'min-w-0 flex-1' : 'px-3'} ${
+        docked ? 'zekke-toolbar-docked flex-nowrap overflow-x-auto' : 'flex-wrap'
+      }`}
     >
       <ToolButton
         label="Undo"
@@ -170,22 +203,42 @@ export default function DocumentToolbar({
         </ToolButton>
       ))}
 
-      <Swatches
+      <ColorMenu
         label="Text colour"
         colors={TEXT_COLORS}
+        columns={TEXT_COLOR_COLUMNS}
+        current={state.textColor}
+        clearLabel="Default colour"
+        custom
         onPick={(color) => editor.chain().focus().setColor(color).run()}
         onClear={() => editor.chain().focus().unsetColor().run()}
       >
         <span className="text-sm font-semibold leading-none">A</span>
-      </Swatches>
-      <Swatches
+      </ColorMenu>
+      <ColorMenu
         label="Highlight"
         colors={HIGHLIGHT_COLORS}
-        onPick={(color) => editor.chain().focus().toggleHighlight({ color }).run()}
+        columns={6}
+        current={state.highlightColor}
+        clearLabel="No highlight"
+        onPick={(color) => editor.chain().focus().setHighlight({ color }).run()}
         onClear={() => editor.chain().focus().unsetHighlight().run()}
       >
         <HighlightGlyph />
-      </Swatches>
+      </ColorMenu>
+      <ColorMenu
+        label="Cell colour"
+        colors={TEXT_COLORS}
+        columns={TEXT_COLOR_COLUMNS}
+        current={state.inTable ? state.cellColor : null}
+        clearLabel="No fill"
+        custom
+        disabled={!state.inTable}
+        onPick={(color) => editor.chain().focus().setCellAttribute('backgroundColor', color).run()}
+        onClear={() => editor.chain().focus().setCellAttribute('backgroundColor', null).run()}
+      >
+        <CellFillGlyph />
+      </ColorMenu>
 
       <Divider />
 
@@ -240,44 +293,22 @@ export default function DocumentToolbar({
 
       <Divider />
 
-      <LinkControl editor={editor} active={state.link} href={state.linkHref} enabled={state.canLink} />
+      <LinkControl
+        editor={editor}
+        active={state.link}
+        href={state.linkHref}
+        enabled={state.canLink}
+      />
 
-      {state.inTable ? (
-        <>
-          <ToolButton
-            label="Add row"
-            onClick={() => editor.chain().focus().addRowAfter().run()}
-          >
-            <span className="text-xs leading-none">+R</span>
-          </ToolButton>
-          <ToolButton
-            label="Add column"
-            onClick={() => editor.chain().focus().addColumnAfter().run()}
-          >
-            <span className="text-xs leading-none">+C</span>
-          </ToolButton>
-          <ToolButton
-            label="Delete table"
-            onClick={() => editor.chain().focus().deleteTable().run()}
-          >
-            <span className="text-xs leading-none">×T</span>
-          </ToolButton>
-        </>
-      ) : (
-        <ToolButton
-          label="Insert table"
-          onClick={() =>
-            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-          }
-        >
-          <TableGlyph />
+      <TableMenu editor={editor} />
+
+      {onInsertImage !== undefined && (
+        <ToolButton label="Insert image" onClick={onInsertImage}>
+          <ImageGlyph />
         </ToolButton>
       )}
 
-      <ToolButton
-        label="Page break"
-        onClick={() => editor.chain().focus().setPageBreak().run()}
-      >
+      <ToolButton label="Page break" onClick={() => editor.chain().focus().setPageBreak().run()}>
         <PageBreakGlyph />
       </ToolButton>
       <ToolButton
@@ -293,8 +324,40 @@ export default function DocumentToolbar({
         <ClearGlyph />
       </ToolButton>
 
-      <Divider />
+      {!docked && (
+        <>
+          <Divider />
+          <ViewControls
+            view={view}
+            onViewChange={onViewChange}
+            rulersShown={rulersShown}
+            onRulersShownChange={onRulersShownChange}
+            onPrint={onPrint}
+            divided
+          />
+        </>
+      )}
+    </div>
+  );
+}
 
+export function ViewControls({
+  view,
+  onViewChange,
+  rulersShown,
+  onRulersShownChange,
+  divided = false,
+  onPrint = () => window.print(),
+}: {
+  view: DocumentView;
+  onViewChange: (view: DocumentView) => void;
+  rulersShown: boolean;
+  onRulersShownChange: (shown: boolean) => void;
+  divided?: boolean;
+  onPrint?: () => void;
+}) {
+  return (
+    <>
       <ToolButton
         label="Page view"
         pressed={view === 'pages'}
@@ -309,13 +372,21 @@ export default function DocumentToolbar({
       >
         <ContinuousGlyph />
       </ToolButton>
+      <ToolButton
+        label={rulersShown ? 'Hide rulers' : 'Show rulers'}
+        pressed={view === 'pages' && rulersShown}
+        disabled={view !== 'pages'}
+        onClick={() => onRulersShownChange(!rulersShown)}
+      >
+        <RulerGlyph />
+      </ToolButton>
 
-      <Divider />
+      {divided && <Divider />}
 
-      <ToolButton label="Print or save as PDF" onClick={() => window.print()}>
+      <ToolButton label="Print or save as PDF" onClick={onPrint}>
         <PrintGlyph />
       </ToolButton>
-    </div>
+    </>
   );
 }
 
@@ -403,7 +474,10 @@ function LinkControl({
       </ToolButton>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 flex items-center gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lift">
+        <div
+          data-popover
+          className="absolute left-0 top-full z-30 mt-1 flex items-center gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lift"
+        >
           <input
             ref={input}
             aria-label="Link address"
@@ -475,9 +549,7 @@ function ToolButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40 ${
-        pressed
-          ? 'bg-brand-50 text-brand-700'
-          : 'text-ink-soft hover:bg-raised hover:text-ink'
+        pressed ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-raised hover:text-ink'
       }`}
     >
       {children}
@@ -564,7 +636,9 @@ function FontSizeControl({
       return;
     }
 
-    list.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+    list.current
+      ?.querySelector<HTMLElement>('[aria-selected="true"]')
+      ?.scrollIntoView({ block: 'nearest' });
 
     const onPointerDown = (event: PointerEvent) => {
       if (!container.current?.contains(event.target as Node)) {
@@ -641,6 +715,7 @@ function FontSizeControl({
           ref={list}
           role="listbox"
           aria-label="Font sizes"
+          data-popover
           className="absolute left-0 top-full z-30 mt-1 max-h-64 w-16 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-lift"
         >
           {FONT_SIZES.map((option) => (
@@ -652,7 +727,9 @@ function FontSizeControl({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => apply(option)}
               className={`block w-full rounded-md px-2 py-1 text-left text-sm transition-colors ${
-                option === size ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-raised hover:text-ink'
+                option === size
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-ink-soft hover:bg-raised hover:text-ink'
               }`}
             >
               {fontSizePixels(option)}
@@ -681,38 +758,115 @@ function ChevronGlyph() {
   );
 }
 
-function Swatches({
+function ColorMenu({
   label,
   colors,
+  columns,
+  current,
+  clearLabel,
+  custom,
+  disabled = false,
   onPick,
   onClear,
   children,
 }: {
   label: string;
   colors: readonly string[];
+  columns: number;
+  current: string | null;
+  clearLabel: string;
+  custom?: boolean;
+  disabled?: boolean;
   onPick: (color: string) => void;
   onClear: () => void;
   children: ReactNode;
 }) {
+  const { open, close, toggle, containerProps } = useToolMenu();
+
+  const choose = (action: () => void) => {
+    action();
+    close();
+  };
+
+  const selected = current?.toLowerCase() ?? null;
+
   return (
-    <div className="group relative">
-      <ToolButton label={label} onClick={onClear}>
+    <div {...containerProps} className="relative">
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        aria-haspopup="true"
+        aria-expanded={open}
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={toggle}
+        className={`flex h-8 min-w-8 flex-col items-center justify-center gap-0.5 rounded-md px-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40 ${
+          open ? 'bg-raised text-ink' : 'text-ink-soft hover:bg-raised hover:text-ink'
+        }`}
+      >
         {children}
-      </ToolButton>
-      <div className="invisible absolute left-0 top-full z-20 mt-1 flex gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lift group-hover:visible group-focus-within:visible">
-        {colors.map((color) => (
+        <span
+          aria-hidden="true"
+          className="h-1 w-4 rounded-sm border border-line-strong"
+          style={{ backgroundColor: current ?? 'transparent' }}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div
+          data-popover
+          role="dialog"
+          aria-label={label}
+          className="absolute left-0 top-full z-30 mt-1 rounded-xl border border-line bg-surface p-2 shadow-lift"
+        >
           <button
-            key={color}
             type="button"
-            aria-label={`${label} ${color}`}
-            title={color}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onPick(color)}
-            style={{ backgroundColor: color }}
-            className="h-5 w-5 rounded border border-line-strong"
-          />
-        ))}
-      </div>
+            onClick={() => choose(onClear)}
+            className="mb-2 flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm text-ink-soft transition-colors hover:bg-raised hover:text-ink"
+          >
+            <span aria-hidden="true" className="relative h-4 w-4 rounded border border-line-strong bg-surface">
+              <span className="absolute left-1/2 top-[-2px] h-[calc(100%+4px)] w-px -translate-x-1/2 rotate-45 bg-danger" />
+            </span>
+            {clearLabel}
+          </button>
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${columns}, 1.25rem)` }}
+          >
+            {colors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                aria-label={`${label} ${color}`}
+                aria-pressed={selected === color}
+                title={color}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => choose(() => onPick(color))}
+                style={{ backgroundColor: color }}
+                className={`h-5 w-5 rounded border transition-transform hover:scale-110 ${
+                  selected === color
+                    ? 'border-brand-600 ring-2 ring-brand-500/60'
+                    : 'border-line-strong'
+                }`}
+              />
+            ))}
+          </div>
+          {custom && (
+            <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-sm text-ink-soft transition-colors hover:bg-raised hover:text-ink">
+              <input
+                type="color"
+                aria-label={`${label}: custom`}
+                value={pickerColor(current)}
+                onChange={(event) => choose(() => onPick(event.target.value))}
+                className="h-5 w-5 cursor-pointer rounded border border-line-strong bg-transparent p-0"
+              />
+              Custom colour…
+            </label>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -805,32 +959,33 @@ function LinkGlyph() {
   );
 }
 
-function TableGlyph() {
+function CellFillGlyph() {
   return (
     <svg
       viewBox="0 0 20 20"
-      className="h-4 w-4"
-      stroke="currentColor"
-      strokeWidth="1.4"
+      className="h-3.5 w-3.5"
       fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <rect x="3" y="4" width="14" height="12" rx="1.5" />
-      <path d="M3 8h14M8 8v8M13 8v8" />
+      <rect x="3" y="3" width="14" height="14" rx="1.5" />
+      <path d="M3 10h14M10 3v14" />
+      <path d="M3 3h7v7H3z" fill="currentColor" fillOpacity="0.35" />
     </svg>
   );
 }
 
 function HighlightGlyph() {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" aria-hidden="true">
       <path
-        d="M5 12.5 11.5 6l2.5 2.5L7.5 15H5z"
+        d="M5 14 12.5 6.5l3 3L8 17H5z"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <path d="M3.5 17.5h13" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -848,6 +1003,16 @@ function ClearGlyph() {
     >
       <path d="M7 5h9M10.5 5 8 15" />
       <path d="M3.5 9.5 8 14M8 9.5 3.5 14" />
+    </svg>
+  );
+}
+
+function ImageGlyph() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <rect x="2.5" y="3.5" width="15" height="13" rx="2" />
+      <circle cx="7.5" cy="8" r="1.5" />
+      <path d="M3 15l4.5-4.5 3 3 2.5-2.5 4.5 4.5" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -899,6 +1064,24 @@ function ContinuousGlyph() {
       aria-hidden="true"
     >
       <path d="M4 4.5h12M4 8.2h12M4 11.8h12M4 15.5h8" />
+    </svg>
+  );
+}
+
+function RulerGlyph() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect x="2.5" y="6.5" width="15" height="7" rx="1" />
+      <path d="M5.5 6.5v2.5M8.5 6.5v1.5M11.5 6.5v2.5M14.5 6.5v1.5" />
     </svg>
   );
 }

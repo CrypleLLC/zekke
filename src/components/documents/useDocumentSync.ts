@@ -7,10 +7,13 @@ import {
   apiTransport,
   isUntouched,
   writeDocumentFont,
+  writePageMargins,
+  DOCUMENT_SYNC_OPTIONS,
   type DocumentSyncOptions,
   type SyncState,
 } from "@/lib/documents";
 import { DEFAULT_DOCUMENT_FONT } from "@/lib/document-styles";
+import { DEFAULT_PAGE_MARGINS } from "@/lib/document-page";
 import { useAuthedContext, useZekke } from "@/components/session/ZekkeProvider";
 
 export interface DocumentSyncHandle {
@@ -26,6 +29,7 @@ const INITIAL_STATE: SyncState = {
   revision: 0,
   pending: 0,
   gapDetected: false,
+  uploading: false,
   snapshotBytes: 0,
   logBytes: 0,
   capacity: "ok",
@@ -37,7 +41,12 @@ export interface DocumentSyncSetup {
 }
 
 const DOCUMENT_SETUP: DocumentSyncSetup = {
-  seedUntouched: (doc) => writeDocumentFont(doc, DEFAULT_DOCUMENT_FONT),
+  syncOptions: DOCUMENT_SYNC_OPTIONS,
+  seedUntouched: (doc) =>
+    doc.transact(() => {
+      writeDocumentFont(doc, DEFAULT_DOCUMENT_FONT);
+      writePageMargins(doc, DEFAULT_PAGE_MARGINS);
+    }),
 };
 
 export function useDocumentSync(id: string, setup: DocumentSyncSetup = DOCUMENT_SETUP): DocumentSyncHandle {
