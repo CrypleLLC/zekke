@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DocumentSync, apiTransport, type SyncState } from "@/lib/documents";
+import type * as Y from "yjs";
+import {
+  DocumentSync,
+  apiTransport,
+  isUntouched,
+  writeDocumentFont,
+  writePageMargins,
+  DOCUMENT_SYNC_OPTIONS,
+  type DocumentSyncOptions,
+  type SyncState,
+} from "@/lib/documents";
+import { DEFAULT_DOCUMENT_FONT } from "@/lib/document-styles";
+import { DEFAULT_PAGE_MARGINS } from "@/lib/document-page";
 import { useAuthedContext, useZekke } from "@/components/session/ZekkeProvider";
 
 export interface DocumentSyncHandle {
@@ -17,9 +29,27 @@ const INITIAL_STATE: SyncState = {
   revision: 0,
   pending: 0,
   gapDetected: false,
+  uploading: false,
+  snapshotBytes: 0,
+  logBytes: 0,
+  capacity: "ok",
 };
 
-export function useDocumentSync(id: string): DocumentSyncHandle {
+export interface DocumentSyncSetup {
+  syncOptions?: DocumentSyncOptions;
+  seedUntouched?: (doc: Y.Doc) => void;
+}
+
+const DOCUMENT_SETUP: DocumentSyncSetup = {
+  syncOptions: DOCUMENT_SYNC_OPTIONS,
+  seedUntouched: (doc) =>
+    doc.transact(() => {
+      writeDocumentFont(doc, DEFAULT_DOCUMENT_FONT);
+      writePageMargins(doc, DEFAULT_PAGE_MARGINS);
+    }),
+};
+
+export function useDocumentSync(id: string, setup: DocumentSyncSetup = DOCUMENT_SETUP): DocumentSyncHandle {
   const context = useAuthedContext();
   const { reportError } = useZekke();
   const transport = useMemo(() => apiTransport(context), [context]);
@@ -30,7 +60,7 @@ export function useDocumentSync(id: string): DocumentSyncHandle {
 
   useEffect(() => {
     let cancelled = false;
-    const engine = new DocumentSync(id, transport);
+    const engine = new DocumentSync(id, transport, setup.syncOptions);
 
     const unsubscribe = engine.subscribe((next) => {
       if (!cancelled) {
@@ -43,6 +73,9 @@ export function useDocumentSync(id: string): DocumentSyncHandle {
       .then(() => {
         if (cancelled) {
           return;
+        }
+        if (isUntouched(engine.doc)) {
+          setup.seedUntouched?.(engine.doc);
         }
         engine.startPolling();
         setSync(engine);
@@ -60,7 +93,7 @@ export function useDocumentSync(id: string): DocumentSyncHandle {
       setState(INITIAL_STATE);
       void engine.close().catch(() => undefined);
     };
-  }, [id, transport, reportError]);
+  }, [id, transport, reportError, setup]);
 
   useEffect(() => {
     if (sync === undefined) {

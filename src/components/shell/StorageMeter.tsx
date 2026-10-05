@@ -62,6 +62,9 @@ export default function StorageMeter() {
       <p className="mt-1.5 text-caption normal-case tracking-normal text-ink-muted">
         {bar.summary}
       </p>
+      {bar.imagesSummary !== undefined && (
+        <p className="text-caption normal-case tracking-normal text-ink-muted">{bar.imagesSummary}</p>
+      )}
       {bar.uploadingSummary !== undefined && (
         <p className="text-caption normal-case tracking-normal text-brand-700">
           {bar.uploadingSummary}

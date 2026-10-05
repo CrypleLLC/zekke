@@ -1,8 +1,10 @@
-import type { DocumentSummary } from "@/lib/documents";
-import type { SyncStatus } from "@/lib/documents";
+import type { DocumentKind, DocumentSummary, SnapshotCapacity } from "@/lib/documents";
+import type { FirstPage, SyncStatus } from "@/lib/documents";
+import { cellsInBytes, type CapacityRefusal } from "@/lib/spreadsheets/capacity";
 import { daysLabel } from "./trash";
 
 export const UNTITLED_DOCUMENT = "Untitled document";
+export const UNTITLED_SPREADSHEET = "Untitled spreadsheet";
 export const UNREADABLE_DOCUMENT_TITLE = "Unreadable document";
 export const UNTITLED_HEADING = "Untitled heading";
 export const DOCUMENT_TITLE_MAX_CHARACTERS = 80;
@@ -18,10 +20,14 @@ function truncate(text: string, limit: number): string {
     : `${characters.slice(0, limit).join("").trimEnd()}${ELLIPSIS}`;
 }
 
-export function documentTitle(title: string): string {
+export function untitledLabel(kind: DocumentKind): string {
+  return kind === "spreadsheet" ? UNTITLED_SPREADSHEET : UNTITLED_DOCUMENT;
+}
+
+export function documentTitle(title: string, kind: DocumentKind = "document"): string {
   const trimmed = title.trim();
   return trimmed.length === 0
-    ? UNTITLED_DOCUMENT
+    ? untitledLabel(kind)
     : truncate(trimmed, DOCUMENT_TITLE_MAX_CHARACTERS);
 }
 
@@ -50,6 +56,39 @@ export function saveStatusLabel(status: SyncStatus, pending: number): string {
     return `Offline — ${changes} kept on this device`;
   }
   return SAVE_STATUS_LABELS[status];
+}
+
+export type SaveIndicator = "opening" | "unsaved" | "saving" | "saved";
+
+export interface SaveProgress {
+  status: SyncStatus;
+  pending: number;
+  uploading: boolean;
+  gapDetected: boolean;
+}
+
+export function saveIndicator(progress: SaveProgress): SaveIndicator {
+  if (progress.status === "idle" || progress.status === "loading") {
+    return "opening";
+  }
+  if (progress.gapDetected || progress.status === "error") {
+    return "unsaved";
+  }
+  if (progress.uploading) {
+    return "saving";
+  }
+  return progress.pending > 0 ? "unsaved" : "saved";
+}
+
+export function saveIndicatorLabel(progress: SaveProgress): string {
+  const indicator = saveIndicator(progress);
+  if (indicator === "saving") {
+    return SAVE_STATUS_LABELS.saving;
+  }
+  if (indicator === "unsaved" && progress.status === "saving") {
+    return "Changes not saved yet";
+  }
+  return saveStatusLabel(progress.status, progress.pending);
 }
 
 export const MINUTE_MS = 60_000;
@@ -84,6 +123,9 @@ export function editedLabel(updatedAt: string, now: Date = new Date()): string {
 
 export interface DocumentTile {
   id: string;
+  kind: DocumentKind;
+  grid?: string[][];
+  firstPage?: FirstPage;
   title: string;
   preview: string;
   thumbnail: string;
@@ -103,8 +145,11 @@ export function buildDocumentTiles(
   return summaries
     .map((summary) => ({
       id: summary.id,
+      kind: summary.kind,
+      grid: summary.readable ? summary.grid : undefined,
+      firstPage: summary.readable ? summary.firstPage : undefined,
       title: summary.readable
-        ? documentTitle(summary.title)
+        ? documentTitle(summary.title, summary.kind)
         : UNREADABLE_DOCUMENT_TITLE,
       preview: summary.readable ? documentPreview(summary.preview) : "",
       thumbnail: summary.readable ? documentThumbnail(summary.preview) : "",
@@ -139,17 +184,50 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function documentHref(id: string): string {
-  return `/docs/${id}`;
+export function documentHref(id: string, kind: DocumentKind = "document"): string {
+  return kind === "spreadsheet" ? `/sheets/${id}` : `/docs/${id}`;
+}
+
+export const NEW_ITEM_LABELS = {
+  menu: "New",
+  document: "New document",
+  spreadsheet: "New spreadsheet",
+} as const;
+
+export function capacityRefusalMessage(refusal: CapacityRefusal): string {
+  if (refusal.reason === "cell-too-large") {
+    return "That cell is too large to store. Split its content across several cells.";
+  }
+  const room = Math.max(0, refusal.limitBytes - refusal.usedBytes);
+  const fits = cellsInBytes(room);
+  const asked = cellsInBytes(refusal.addedBytes);
+  return fits === 0
+    ? "This spreadsheet is full: nothing more can be added. Remove content, or start a new spreadsheet."
+    : `This spreadsheet has room for about ${fits.toLocaleString()} more cells, and that change needs about ${asked.toLocaleString()}. Nothing was changed.`;
+}
+
+export function snapshotCapacityMessage(capacity: SnapshotCapacity): string | undefined {
+  switch (capacity) {
+    case "near":
+      return "This spreadsheet is close to the largest size Zekke can store.";
+    case "over":
+      return "This spreadsheet is past the largest size Zekke can store. Your edits are saved, but it can no longer be compacted, so it will open more slowly. Remove content to bring it back under.";
+    default:
+      return undefined;
+  }
 }
 
 export function documentCountsLabel(
   words: number,
   characters: number,
-  pages: number,
+  pages?: number,
 ): string {
-  const sheets = Math.max(1, Math.round(pages));
-  return `${words.toLocaleString()} ${words === 1 ? "word" : "words"} · ${characters.toLocaleString()} ${
+  const text = `${words.toLocaleString()} ${words === 1 ? "word" : "words"} · ${characters.toLocaleString()} ${
     characters === 1 ? "character" : "characters"
-  } · ${sheets} ${sheets === 1 ? "page" : "pages"}`;
+  }`;
+  if (pages === undefined) {
+    return text;
+  }
+  const sheets = Math.max(1, Math.round(pages));
+  return `${text} · ${sheets} ${sheets === 1 ? "page" : "pages"}`;
 }

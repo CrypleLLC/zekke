@@ -12,6 +12,7 @@ the sidebar; they open from the account menu ([`components/shell`](../shell/READ
 | `DevicesScreen.tsx` | The **Devices** tab — the account's devices, names, chain verification, removing another device with the phrase |
 | `ConnectExtension.tsx` | Inside the Devices tab: linking the browser extension — the code and its countdown, the fingerprint to compare, the device's name, and refusing on a mismatch ([`lib/pairing`](../../lib/pairing/README.md)) |
 | `AccountScreen.tsx` | The **Account** tab — deleting the account with the phrase (and the account PIN on Paranoid) |
+| Plan tab | [`components/plan`](../plan/README.md)'s `PlanScreen`. `SettingsModal` takes an `initialTab`, so the grace warning opens Settings straight on it |
 
 The **Sharing** tab is drawn by `SharingScreen`, which lives with the rest of sharing in
 [`components/sharing`](../sharing/README.md).

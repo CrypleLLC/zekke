@@ -24,6 +24,19 @@ export function isUsername(value: string): boolean {
   return USERNAME_PATTERN.test(value);
 }
 
+export type PlanState = 'free' | 'active' | 'grace';
+
+export interface PlanRecord {
+  code: string;
+  state: PlanState;
+  paid_until?: string;
+  renews: boolean;
+  grace_ends_at?: string;
+  storage_quota_bytes: number;
+  retention_days: number;
+  features: string[];
+}
+
 export interface AccountRecord {
   user_address: string;
   username: string;
@@ -31,6 +44,7 @@ export interface AccountRecord {
   paranoid: boolean;
   retention_days: number;
   created_at: string;
+  plan: PlanRecord;
 }
 
 export interface UsernameResolution {

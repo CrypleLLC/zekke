@@ -38,11 +38,14 @@ no gain.
 | `records.ts`    | Wire types, server ceilings, and the contiguity rules                 |
 | `api.ts`        | The nine endpoints, DEK wrapping, and the `document-delete` signature |
 | `crypto.ts`     | Sealing deltas and snapshots under the per-document DEK               |
-| `content.ts`    | The `Y.Doc` layout: `body` fragment, `meta.title`                     |
+| `content.ts`    | The `Y.Doc` layout: `body`, `meta.title`, `meta.font`, `meta.margins` |
 | `sync.ts`       | `DocumentSync` — the engine: open, pull, debounce, push, compact      |
 | `summaries.ts`  | Decrypting enough of each document to render the dashboard list       |
 | `outline.ts`    | Headings out of a ProseMirror document, nested into a tree            |
 | `pagination.ts` | Where the page breaks fall, given block heights                       |
+| `split.ts`      | Splitting one Yjs update into several that each fit in a delta        |
+| `miniature.ts`  | The beginning of a document, as the Documents screen draws its first page |
+| `attachments/`  | Images: their keys, objects, upload and opening ([README](attachments/README.md)) |
 
 ## Sealing
 
@@ -76,6 +79,15 @@ Because the log may legitimately start above `0` (a partial prune) or restart at
 one), a cold pull cannot demand that the first row equals `cursor + 1`. `assertLogFollows` encodes
 what is actually true: the first surviving row is either `1` or `snapshot_seq + 1`.
 
+**What the snapshot already holds is counted from where the log starts, not from
+`snapshot_seq`.** A cold pull records `logBase`, one below the first surviving row — `snapshot_seq`
+when the log continues, `0` when it restarted (and `0` when it is empty, since the next append will
+be `1`). Compaction is due on `cursor − logBase` deltas, and has nothing to do when
+`cursor ≤ logBase`. Until 2026-10-05 both compared the cursor with `snapshot_seq`, so after a full
+prune a document waited for its new log to pass the old `snapshot_seq` before it compacted again —
+twice the threshold the first time, more each time after. `compacting after the log restarted` in
+`documents.test.ts` pins it.
+
 ### `latest_seq` from an append is not a cursor
 
 `POST /updates` returns the log's new `latest_seq`. Treating it as "everything I have seen" is
@@ -108,24 +120,84 @@ could still have arrived.
 ## Compaction
 
 Only a client can compact: the server cannot merge an encrypted log. A document nobody opens
-never compacts and its log grows — inherent to encrypted CRDT logs, not a defect, but it means
-compaction belongs to the open/close lifecycle. `DocumentSync.close()` flushes, then compacts if
-the log has grown past `DEFAULT_COMPACT_THRESHOLD` deltas past the snapshot.
+never compacts and its log grows — inherent to encrypted CRDT logs, not a defect. Compaction is
+for speed and space, never correctness: a snapshot plus any log rebuilds the same document, it is
+just slower to open and larger to store as the log grows.
+
+**There are two lifecycles.** By default `DocumentSync.close()` flushes, then compacts if
+`shouldCompact()` says so. That is what spreadsheets run.
+
+**The document editor compacts while open instead** (`DOCUMENT_SYNC_OPTIONS`: `compactWhileOpen`,
+`compactThreshold: 200`). `close()` runs only when the editor unmounts inside the app — going back
+to the vault, opening another document. Closing the tab, reloading, or a phone killing a
+background tab runs no unmount and aborts whatever is in flight, so compacting on close would in
+practice almost never happen. With `compactWhileOpen` the engine checks after every flush that
+pushed something, and once on `open()`, and compacts as soon as the log reaches the threshold and
+nothing is pending — so the count restarts from the new snapshot, and a document left at 250
+deltas by a tab that was simply closed is folded the next time anyone opens it. `close()` then
+only flushes. A compaction already running is never started twice, and its failure is swallowed:
+the next push or the next open tries again.
+
+**Why 200.** The threshold decides how often the whole document is re-uploaded, not what a client
+can take: 200 deltas are a few hundred KB at most, one request (the transport asks `/updates` for
+pages of `MAX_PAGE_LIMIT`, 200, the server's maximum) and milliseconds to apply. With the 3 s
+debounce and the 8 s cap, someone writing produces roughly 5–15 appends a minute, so 200 is one
+compaction every ~13–40 minutes of writing — rare enough that a document of several MB is not
+re-sent every few minutes, small enough that opening is always fast.
 
 `expected_revision` guards the install. A `409 CONFLICT` means another device wrote first, so the
 engine re-reads the head and drops its own compaction attempt rather than retrying into a race.
 The failure it prevents is **staleness, not simultaneity**: appends are immune by construction,
 snapshot installs are not.
 
+### When to compact, and the snapshot ceiling
+
+By default `shouldCompact` is the count rule: `compactThreshold` deltas past the snapshot
+(`DEFAULT_COMPACT_THRESHOLD`, 64; the document editor sets 200).
+`compactLogRatio` and `compactMinLogBytes` add a **size rule**: compact once the log holds at least
+`max(compactMinLogBytes, compactLogRatio × snapshotBytes)` bytes. Compacting re-uploads the whole
+snapshot, so for a large item the count rule spends megabytes to fold kilobytes; the ratio keeps the
+upload in proportion to what it folds. Spreadsheets use it (`SPREADSHEET_SYNC_OPTIONS` in
+[`lib/spreadsheets`](../spreadsheets/README.md#capacity)) and compact on close; documents keep the
+count rule, at 200, while open.
+
+The engine tracks `snapshotBytes` (the plaintext snapshot it opened or installed) and `logBytes`
+(every delta since, pulled or pushed) in its state; `estimatedBytes()` is their sum.
+
+**A snapshot is checked before it is sent.** `MAX_SNAPSHOT_CHARACTERS` is the documents body limit
+(`DOCUMENT_MAX_BODY_BYTES`, 8 MiB) less 1 KiB for the JSON around it. `compact()` seals, records
+`sealedSnapshotCharacters` and `capacity` in the state — `near` above 85 % of the ceiling, `over`
+above it — and on `over` throws `SnapshotTooLargeError` without calling the server. An item that is
+`over` can still be edited, because deltas are small, but stops compacting until it is reopened;
+the screen has to say so.
+
 ## Debounce is a storage decision
 
 The sealed-blob envelope costs 29 bytes per seal (`0x01 ‖ iv(12) ‖ tag(16)`). Sealing every
 keystroke makes envelope overhead dominate the payload, so the engine merges queued updates and
-pushes on a 1.5 s debounce. Batches are chunked to stay under the server's 262144-character
-per-delta ceiling; a single update over that ceiling throws rather than being silently truncated.
+pushes on a 3 s debounce. It was 1.5 s: the longer quiet merges more of a writer's short pauses
+into one append, at the cost of a red save dot that lasts a little longer.
+
+The debounce is capped: **no change waits more than 8 s** (`DEFAULT_MAX_WAIT_MS`, the
+`maxWaitMs` option, never less than the debounce). A plain trailing debounce restarts on every
+keystroke, so someone typing without a 3 s pause would push nothing at all until they
+stopped, and a crashed tab or a lost device would take all of it. `scheduleFlush` remembers when
+the first unsent change was queued and arms the timer for whichever comes first — 3 s of quiet
+or 8 s since that first change. The clock restarts when a flush starts, from the timer or from
+anything else that calls `flush()` (hiding the tab, coming back online, closing). Continuous
+typing therefore costs at most one append every 8 s, which is what keeps the cap from becoming a
+storage cost of its own. Batches are chunked to stay under the server's 262144-character
+per-delta ceiling, and **a single local update over it is split** (`splitUpdate`, below) rather than
+refused.
 
 `client_update_id` is generated once per batch and **reused on retry**, so a replay after a
 dropped response is skipped server-side and consumes no sequence number.
+
+Because of the debounce, `status: "saving"` means two different things: changes queued and
+waiting for the timer, and changes being pushed. `SyncState.uploading` tells them apart — `true`
+from the moment `flush()` starts a drain until that drain settles, `false` otherwise — and
+`pending` counts what the server does not have yet, in flight included. The editor's save dot
+reads both ([`lib/app`](../app/documents.ts)'s `saveIndicator`).
 
 ## Document titles live inside the CRDT
 
@@ -137,6 +209,31 @@ The consequence is that the dashboard list cannot be rendered from `GET /documen
 `loadDocumentSummaries` opens each document (snapshot plus log) at a bounded concurrency of 4 and
 reads the title out, the same shape `listNotes` uses. An undecryptable document degrades to a
 tile marked unreadable rather than failing the whole list.
+
+## The base font lives inside the CRDT too
+
+`meta.font` is the font the document's text is drawn in when no font is set on it. It is a
+value from [`lib/document-styles`](../document-styles/README.md)' `FONT_FAMILIES`, and it is read
+through `documentBaseFont`, which sanitises it and falls back to Inter.
+
+The field exists so a **new** document can start in Arial while every document written before it
+keeps the Inter it was written in. A document gets it once, the first time it is opened while
+`isUntouched` — no device has ever written anything to it, so `doc.store.clients` is empty.
+`components/documents/useDocumentSync` writes it right after `open()`, and it syncs like any other
+edit. A document created before this field and never opened gets it too; it has no text, so
+nothing changes appearance. A document with any content, a restored one or a shared copy, is
+never untouched and keeps what it had.
+
+Deciding at first open rather than at `createDocument` keeps creation a single request: writing
+the field there would mean creating from a snapshot, which is a create plus a compaction.
+
+## The page margins live inside the CRDT too
+
+`meta.margins` is `{ top, right, bottom, left }` in millimetres — the document's page margins,
+read through [`lib/document-page`](../document-page/README.md)'s `pageMargins`, which falls back to
+the 2.54 cm every document had before the field existed. It is seeded on the same terms and in the
+same transaction as `meta.font`: an untouched document gets 3 cm top and left, 2 cm right and
+bottom. `writePageMargins` stores exactly the four sides, whatever else the object carries.
 
 ## The outline is derived, and stays that way
 
@@ -155,8 +252,8 @@ state it was read from — so the rule is to re-read the outline on every change
 position across transactions**. TipTap's own Table of Contents extension is built on the stamped-id
 model and is in the paid Pro tier; both facts are reasons not to reach for it.
 
-`activeHeadingPos` takes a cursor position rather than an editor, and `outlineTree` takes entries
-rather than a document, so both are testable in the node-environment suite. The DOM half — the
+`headingAtScroll` takes measured heading offsets rather than elements, and `outlineTree` takes
+entries rather than a document, so both are testable in the node-environment suite. The DOM half — the
 scroll, the focus — lives in `components/documents/useOutline.ts`.
 
 ## Pagination is measured, never written
@@ -194,6 +291,18 @@ different block while the space left above it barely moves — compare the fills
 plugin concludes nothing happened, skips the rebuild, and leaves the page geometry stale for good.
 It compares the block index as well, and only tolerates sub-pixel drift in the fill.
 
+## Images are attachments, and compaction reports them
+
+The image bytes are not in the CRDT: an image is an attachment of the document, its key in the
+document's `attachments` map ([`attachments/`](attachments/README.md)). Two things here know about
+it. After a compaction installs, `DocumentSync` reports the attachments the snapshot still
+references through the transport's optional `reportAttachments` (`apiTransport` sends
+`PUT /documents/{id}/attachments/references`), so the server can collect an image removed from the
+text 30 days later; a document that never had an attachment sends nothing, and a failed report
+never fails the compaction. And `readFirstPage` (`miniature.ts`) keeps the beginning of the body —
+up to the first page break, 60 blocks or 4000 characters, links dropped — with the margins, the
+font and the thumbnails of the images on it, which is what a tile on the Documents screen draws.
+
 ## Deletes
 
 The two delete routes are the only ones that need a signed action; create, edit and compact are
@@ -202,3 +311,22 @@ JWT-only, because an autosave cannot prompt for a seed signature every two secon
 `document-delete` is **variadic**, so `normalizeActionArgs` sorts and de-duplicates the ids before
 signing — the server rebuilds the argument list the same way, and an unsorted list produces a
 signature that cannot verify.
+
+## Splitting an update
+
+One Yjs transaction can produce an update far larger than one delta: a paste of 10 000 cells, an
+undo of one, 60 000 row ids inserted at once — which Yjs merges into a **single struct**. Yjs has no
+public way to split an update, so `split.ts` re-encodes it in the V1 format, which is stable:
+
+- `Y.decodeUpdate` gives the structs and the delete set.
+- A countable struct larger than the budget is written in pieces: each piece is a copy of the
+  item with its content truncated, written at an offset, which is exactly how Yjs writes the right
+  half of an item it split itself. A text piece never ends on half of a surrogate pair.
+- Pieces are packed into chunks under the budget, each a valid update with its own client groups;
+  the delete set goes last, spread over as many chunks as it needs.
+
+Chunks apply in any order — Yjs holds a struct whose origin has not arrived yet as pending — and
+re-applying one is harmless, so a dropped response and a retry change nothing. **One struct that
+cannot be split** — a single value larger than a delta, such as a 300 KB string set as one map
+value — throws `UnsplittableUpdateError`; the spreadsheet binding refuses such a cell before it is
+written.

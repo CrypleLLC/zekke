@@ -4,15 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import {
   createDocument,
+  createDocumentFromSnapshot,
   deleteDocuments,
   listDocumentsMeta,
   loadDocumentSummaries,
   type DocumentSummary,
 } from '@/lib/documents';
+import { ApiError } from '@/lib/api';
 import { descendantsOf, moveItemsToFolder } from '@/lib/folders';
+import { createSpreadsheet } from '@/lib/spreadsheets/api';
+import { IMPORT_ACCEPT, importSpreadsheet, titleFromFileName } from '@/lib/spreadsheets/interchange';
 import {
   DOCUMENT_MINIATURE_TEXT_SHARE,
-  DOCUMENT_TYPE_LABEL,
+  NEW_ITEM_LABELS,
+  SPREADSHEET_FILE_LABELS,
+  UNREADABLE_IMPORT,
+  importErrorMessage,
+  importedMessage,
+  documentTypeLabel,
   LISTING_EMPTY_CELL,
   buildDocumentTiles,
   defaultIconSize,
@@ -36,6 +45,7 @@ import {
   readItemLayout,
   retainSelectable,
   UNTITLED_DOCUMENT,
+  UNTITLED_SPREADSHEET,
   toggleNoteSelection,
   writeIconSize,
   writeItemLayout,
@@ -45,12 +55,12 @@ import {
 } from '@/lib/app';
 import { openWithSessionHandoff } from '@/lib/session/handoff';
 import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
-import { DocumentsIcon, FileTypeIcon, SharingIcon, TrashIcon } from '@/components/ui/icons';
+import { DocumentsIcon, FileTypeIcon, SharingIcon, TrashIcon, UploadIcon } from '@/components/ui/icons';
 import {
   Button,
   Card,
   Empty,
-  FloatingAddButton,
+  FloatingAddMenu,
   LayoutToggle,
   Notice,
   SizeStepper,
@@ -68,6 +78,7 @@ import {
 } from '@/components/folders/FolderBrowser';
 import { FolderDetailsPanel } from '@/components/folders/FolderDetailsPanel';
 import { PanelFacts } from '@/components/shell/SidePanel';
+import DocumentMiniature from './DocumentMiniature';
 
 export default function DocumentsScreen() {
   const context = useAuthedContext();
@@ -76,6 +87,8 @@ export default function DocumentsScreen() {
 
   const [summaries, setSummaries] = useState<DocumentSummary[]>();
   const [message, setMessage] = useState<string>();
+  const [imported, setImported] = useState<string>();
+  const importPicker = useRef<HTMLInputElement>(null);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
@@ -201,18 +214,19 @@ export default function DocumentsScreen() {
     [summaries],
   );
 
-  const openInNewTab = useCallback((id: string) => {
-    openWithSessionHandoff(documentHref(id));
+  const openInNewTab = useCallback((id: string, kind: DocumentTile['kind']) => {
+    openWithSessionHandoff(documentHref(id, kind));
   }, []);
 
-  const create = useCallback(async () => {
+  const create = useCallback(async (kind: DocumentTile['kind']) => {
     setBusy(true);
     try {
-      const { document } = await createDocument(context);
+      const id =
+        kind === 'spreadsheet' ? (await createSpreadsheet(context)).id : (await createDocument(context)).document.id;
       if (openFolder !== null) {
-        await moveItemsToFolder(context, 'documents', [document.id], openFolder);
+        await moveItemsToFolder(context, 'documents', [id], openFolder);
       }
-      openInNewTab(document.id);
+      openInNewTab(id, kind);
       await load();
     } catch (error) {
       setMessage(reportError(error));
@@ -220,6 +234,31 @@ export default function DocumentsScreen() {
       setBusy(false);
     }
   }, [context, load, openFolder, openInNewTab, reportError]);
+
+  const importFile = useCallback(
+    async (file: File) => {
+      setBusy(true);
+      setImported(undefined);
+      setMessage(undefined);
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const result = await importSpreadsheet(file.name, bytes);
+        const record = await createDocumentFromSnapshot(context, result.snapshot);
+        result.snapshot.fill(0);
+        if (openFolder !== null) {
+          await moveItemsToFolder(context, 'documents', [record.id], openFolder);
+        }
+        openInNewTab(record.id, 'spreadsheet');
+        setImported(importedMessage(titleFromFileName(file.name), result.sheets, result.report));
+        await load();
+      } catch (error) {
+        setMessage(importErrorMessage(error) ?? (error instanceof ApiError ? reportError(error) : UNREADABLE_IMPORT));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [context, load, openFolder, openInNewTab, reportError],
+  );
 
   const removeSelected = useCallback(async () => {
     setBusy(true);
@@ -241,7 +280,7 @@ export default function DocumentsScreen() {
       setSelected((current) => toggleNoteSelection(current, id));
       return;
     }
-    openInNewTab(id);
+    openInNewTab(id, tiles?.find((tile) => tile.id === id)?.kind ?? 'document');
   }
 
   const path = (
@@ -279,6 +318,26 @@ export default function DocumentsScreen() {
           {message}
         </Notice>
       )}
+
+      {imported !== undefined && (
+        <Notice tone="info" onDismiss={() => setImported(undefined)}>
+          {imported}
+        </Notice>
+      )}
+
+      <input
+        ref={importPicker}
+        type="file"
+        accept={IMPORT_ACCEPT}
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file !== undefined) {
+            void importFile(file);
+          }
+        }}
+      />
 
       {sharing ? (
         <ShareItemDialog
@@ -351,7 +410,7 @@ export default function DocumentsScreen() {
         <Card>
           <Empty icon={<DocumentsIcon className="h-6 w-6" />}>
             {openFolder === null
-              ? 'Long-form writing, encrypted on this device before it is stored. Documents open in their own tab.'
+              ? 'Long-form writing and spreadsheets, encrypted on this device before they are stored. Each opens in its own tab.'
               : 'This folder is empty. Drag documents onto it, or create one while it is open.'}
           </Empty>
         </Card>
@@ -446,11 +505,27 @@ export default function DocumentsScreen() {
       ) : null}
 
       {selecting ? null : (
-        <FloatingAddButton
-          label="New document"
+        <FloatingAddMenu
+          label={NEW_ITEM_LABELS.menu}
           spread
           disabled={busy}
-          onClick={() => void create()}
+          options={[
+            {
+              label: NEW_ITEM_LABELS.document,
+              icon: <FileTypeIcon kind="document" className="h-5 w-5 shrink-0" />,
+              onSelect: () => void create('document'),
+            },
+            {
+              label: NEW_ITEM_LABELS.spreadsheet,
+              icon: <FileTypeIcon kind="sheet" className="h-5 w-5 shrink-0" />,
+              onSelect: () => void create('spreadsheet'),
+            },
+            {
+              label: SPREADSHEET_FILE_LABELS.import,
+              icon: <UploadIcon className="h-5 w-5 shrink-0 text-ink-muted" />,
+              onSelect: () => importPicker.current?.click(),
+            },
+          ]}
         />
       )}
     </div>
@@ -502,6 +577,11 @@ function DocumentFile({
       selectId={tile.id}
       labelClass={labelClass}
     >
+      {tile.kind === 'spreadsheet' ? (
+        <SheetMiniature tile={tile} textPixels={textPixels} titlePixels={titlePixels} />
+      ) : tile.firstPage !== undefined ? (
+        <DocumentMiniature documentId={tile.id} page={tile.firstPage} />
+      ) : (
       <span className="block px-[12%] py-[8.5%]">
         {tile.title !== UNTITLED_DOCUMENT && (
           <span
@@ -518,6 +598,7 @@ function DocumentFile({
           {tile.thumbnail}
         </span>
       </span>
+      )}
     </PageTile>
   );
 }
@@ -543,10 +624,10 @@ function DocumentRow({
 }) {
   return (
     <ListingRow
-      icon={<FileTypeIcon kind="document" />}
+      icon={<FileTypeIcon kind={tile.kind === 'spreadsheet' ? 'sheet' : 'document'} />}
       name={tile.title}
       nameClassName={tile.readable ? 'text-ink' : 'italic text-ink-muted'}
-      type={DOCUMENT_TYPE_LABEL}
+      type={documentTypeLabel(tile.kind)}
       size={tile.bytes === undefined ? LISTING_EMPTY_CELL : formatBytes(tile.bytes)}
       modified={listingDateLabel(tile.updatedAt)}
       status={documentStatusLabel(tile.readable)}
@@ -568,5 +649,46 @@ function DocumentRow({
         )
       }
     />
+  );
+}
+
+function SheetMiniature({
+  tile,
+  textPixels,
+  titlePixels,
+}: {
+  tile: DocumentTile;
+  textPixels: number;
+  titlePixels: number;
+}) {
+  const grid = tile.grid ?? [];
+  const columns = Math.max(3, ...grid.map((row) => row.length));
+  const rows = Math.max(8, grid.length);
+
+  return (
+    <span className="block px-[8%] py-[8.5%]">
+      {tile.title !== UNTITLED_SPREADSHEET && (
+        <span
+          style={{ fontSize: `${titlePixels}px` }}
+          className="mb-1 block truncate font-semibold leading-tight text-ink"
+        >
+          {tile.title}
+        </span>
+      )}
+      <span
+        aria-hidden="true"
+        style={{ fontSize: `${textPixels}px`, gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        className="grid border-l border-t border-line"
+      >
+        {Array.from({ length: rows * columns }, (_, index) => {
+          const text = grid[Math.floor(index / columns)]?.[index % columns] ?? '';
+          return (
+            <span key={index} className="truncate border-b border-r border-line px-[2px] leading-[1.6] text-ink-soft">
+              {text === '' ? ' ' : text}
+            </span>
+          );
+        })}
+      </span>
+    </span>
   );
 }

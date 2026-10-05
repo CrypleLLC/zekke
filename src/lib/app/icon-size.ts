@@ -203,3 +203,63 @@ export function writeItemLayout(
 ): void {
   storage?.setItem(LAYOUT_STORAGE_KEYS[screen], layout);
 }
+
+export const DOCUMENT_VIEWS = ["pages", "continuous"] as const;
+
+export type DocumentView = (typeof DOCUMENT_VIEWS)[number];
+
+const DOCUMENT_VIEW_STORAGE_KEY = "zekke_document_view";
+
+export const DEFAULT_DOCUMENT_VIEW: DocumentView = "pages";
+
+function isDocumentView(value: string | null): value is DocumentView {
+  return value !== null && (DOCUMENT_VIEWS as readonly string[]).includes(value);
+}
+
+export function readDocumentView(storage = defaultStorage()): DocumentView {
+  const raw = storage?.getItem(DOCUMENT_VIEW_STORAGE_KEY) ?? null;
+  return isDocumentView(raw) ? raw : DEFAULT_DOCUMENT_VIEW;
+}
+
+export function writeDocumentView(
+  view: DocumentView,
+  storage = defaultStorage(),
+): void {
+  storage?.setItem(DOCUMENT_VIEW_STORAGE_KEY, view);
+}
+
+const RULERS_STORAGE_KEY = "zekke_document_rulers";
+const RULERS_HIDDEN = "hidden";
+
+export function readRulersShown(storage = defaultStorage()): boolean {
+  return storage?.getItem(RULERS_STORAGE_KEY) !== RULERS_HIDDEN;
+}
+
+export function writeRulersShown(
+  shown: boolean,
+  storage = defaultStorage(),
+): void {
+  if (shown) {
+    storage?.removeItem(RULERS_STORAGE_KEY);
+  } else {
+    storage?.setItem(RULERS_STORAGE_KEY, RULERS_HIDDEN);
+  }
+}
+
+const OUTLINE_STORAGE_KEY = "zekke_document_outline";
+const OUTLINE_HIDDEN = "hidden";
+
+export function readOutlineShown(storage = defaultStorage()): boolean {
+  return storage?.getItem(OUTLINE_STORAGE_KEY) !== OUTLINE_HIDDEN;
+}
+
+export function writeOutlineShown(
+  shown: boolean,
+  storage = defaultStorage(),
+): void {
+  if (shown) {
+    storage?.removeItem(OUTLINE_STORAGE_KEY);
+  } else {
+    storage?.setItem(OUTLINE_STORAGE_KEY, OUTLINE_HIDDEN);
+  }
+}

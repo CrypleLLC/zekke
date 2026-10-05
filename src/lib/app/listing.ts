@@ -82,6 +82,11 @@ export function fileStatusShortLabel(file: Pick<FileRecord, 'r2_state' | 'gcs_st
 
 export const FOLDER_TYPE_LABEL = 'Folder';
 export const DOCUMENT_TYPE_LABEL = 'Document';
+export const SPREADSHEET_TYPE_LABEL = 'Spreadsheet';
+
+export function documentTypeLabel(kind: 'document' | 'spreadsheet'): string {
+  return kind === 'spreadsheet' ? SPREADSHEET_TYPE_LABEL : DOCUMENT_TYPE_LABEL;
+}
 
 export const DOCUMENT_STATUS = {
   saved: 'Saved',

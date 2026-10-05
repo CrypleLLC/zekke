@@ -69,7 +69,7 @@ what was shared before, and re-wrapping does not take that back — the same pro
 
 ## The folders of a friendship — `folders.ts`
 
-[Task 133](../../../../tasks.md#task-133) D10: **every accepted connection is a folder in Shared**,
+[Task 133](../../../../tasks-closed.md#task-133) D10: **every accepted connection is a folder in Shared**,
 named after the other person's current username, and inside it **either side** creates folders and
 files any share on the connection — whoever created the folder, whoever sent the share. The
 friendship folder is the connection itself; only what is inside it is stored, as one sealed
@@ -174,6 +174,14 @@ would leave the original owner holding a key that opens the copy for ever. A fil
 decrypted, re-encrypted and uploaded again, and counts against the recipient's quota. A document
 copies its last saved snapshot, and refuses (`NothingToCopyError`) when there is none. The copy
 survives the original being deleted or unshared.
+
+**A document's images come with it.** They are attachments of the owner's document, read by the
+recipient through the share while it lasts ([`lib/documents/attachments`](../documents/attachments/README.md#copying-a-shared-document)).
+The copy gives every image a new id in the snapshot (`remapAttachments`), checks the images fit in
+the recipient's storage **before** creating anything, creates the document, then asks the server to
+copy the objects without reading them. A refusal there — the quota moved in between — deletes the
+document just made and is `SharedImagesQuotaError`, which the Shared screen words as the images not
+fitting; the keys travel inside the snapshot, unchanged.
 
 ## What the UI must never claim
 

@@ -129,9 +129,11 @@ Point the client at your API in `.env.local`:
 
 ```bash
 NEXT_PUBLIC_BASE_API_URL=http://localhost:8080
+NEXT_PUBLIC_BILLING_URL=http://localhost:8070
 ```
 
-It defaults to the value above.
+Both default to the values above. The billing service is where plans are bought; the CSP names its
+origin.
 
 The drive uploads and downloads straight from the object store, and the Content Security Policy
 only lets the page talk to hosts it names. Add the API's `R2_ENDPOINT` as well:

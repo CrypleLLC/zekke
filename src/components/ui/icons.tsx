@@ -194,6 +194,25 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function UndoIcon({ flipped, className = '', ...props }: IconProps & { flipped?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={`${className} ${flipped ? '-scale-x-100' : ''}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M7 8H12.5a3.5 3.5 0 0 1 0 7H9" />
+      <path d="M9.5 5.5 6.5 8l3 2.5" />
+    </svg>
+  );
+}
+
 export function MinusIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -366,6 +385,15 @@ export function FolderGlyph({ open = false, ...props }: IconProps & { open?: boo
       />
       <path d="M7.5 18h33a3.5 3.5 0 0 1 3.4 2.6" className="stroke-folder-shine" strokeWidth={1.2} strokeLinecap="round" />
     </svg>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 10a6 6 0 1 1 12 0c0 4.2 1.6 6 2 6.5H4c.4-.5 2-2.3 2-6.5Z" />
+      <path d="M10 19.5a2.2 2.2 0 0 0 4 0" />
+    </Icon>
   );
 }
 

@@ -3,13 +3,56 @@ export interface StyleOption {
   value: string;
 }
 
-export const FONT_FAMILIES: readonly StyleOption[] = [
-  { label: 'Sans', value: 'var(--font-sans)' },
-  { label: 'Serif', value: 'Georgia, "Times New Roman", serif' },
-  { label: 'Mono', value: 'var(--font-mono)' },
+export type FontGroup = 'Classic' | 'Sans serif' | 'Serif' | 'Monospace' | 'Display';
+
+export interface FontOption extends StyleOption {
+  group: FontGroup;
+}
+
+export const FONT_GROUPS: readonly FontGroup[] = ['Classic', 'Sans serif', 'Serif', 'Monospace', 'Display'];
+
+export const FONT_FAMILIES: readonly FontOption[] = [
+  { label: 'Arial', value: 'Arial, var(--font-doc-arimo), sans-serif', group: 'Classic' },
+  {
+    label: 'Times New Roman',
+    value: '"Times New Roman", var(--font-doc-tinos), serif',
+    group: 'Classic',
+  },
+  { label: 'Courier New', value: '"Courier New", var(--font-doc-cousine), monospace', group: 'Classic' },
+  { label: 'Inter', value: 'var(--font-sans)', group: 'Sans serif' },
+  { label: 'Roboto', value: 'var(--font-doc-roboto), sans-serif', group: 'Sans serif' },
+  { label: 'Open Sans', value: 'var(--font-doc-open-sans), sans-serif', group: 'Sans serif' },
+  { label: 'Montserrat', value: 'var(--font-doc-montserrat), sans-serif', group: 'Sans serif' },
+  { label: 'Nunito', value: 'var(--font-doc-nunito), sans-serif', group: 'Sans serif' },
+  { label: 'Raleway', value: 'var(--font-doc-raleway), sans-serif', group: 'Sans serif' },
+  { label: 'Work Sans', value: 'var(--font-doc-work-sans), sans-serif', group: 'Sans serif' },
+  { label: 'Georgia', value: 'Georgia, "Times New Roman", serif', group: 'Serif' },
+  { label: 'Merriweather', value: 'var(--font-doc-merriweather), serif', group: 'Serif' },
+  { label: 'Lora', value: 'var(--font-doc-lora), serif', group: 'Serif' },
+  { label: 'Playfair Display', value: 'var(--font-doc-playfair-display), serif', group: 'Serif' },
+  { label: 'EB Garamond', value: 'var(--font-doc-eb-garamond), serif', group: 'Serif' },
+  { label: 'Source Serif', value: 'var(--font-doc-source-serif), serif', group: 'Serif' },
+  { label: 'Roboto Slab', value: 'var(--font-doc-roboto-slab), serif', group: 'Serif' },
+  { label: 'JetBrains Mono', value: 'var(--font-mono)', group: 'Monospace' },
+  { label: 'Roboto Mono', value: 'var(--font-doc-roboto-mono), monospace', group: 'Monospace' },
+  { label: 'Fira Code', value: 'var(--font-doc-fira-code), monospace', group: 'Monospace' },
+  { label: 'Oswald', value: 'var(--font-doc-oswald), sans-serif', group: 'Display' },
+  { label: 'Caveat', value: 'var(--font-doc-caveat), cursive', group: 'Display' },
+  { label: 'Dancing Script', value: 'var(--font-doc-dancing-script), cursive', group: 'Display' },
 ];
 
-export const FONT_SIZES: readonly string[] = ['12px', '14px', '16px', '18px', '20px', '24px', '30px', '36px'];
+export const DEFAULT_DOCUMENT_FONT = FONT_FAMILIES[0].value;
+export const LEGACY_DOCUMENT_FONT = 'var(--font-sans)';
+
+export function documentBaseFont(stored: unknown): string {
+  return safeFontFamily(stored) ?? LEGACY_DOCUMENT_FONT;
+}
+
+export const FONT_SIZE_MIN_PX = 8;
+export const FONT_SIZE_MAX_PX = 96;
+export const FONT_SIZES: readonly string[] = [
+  8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 48, 56, 64, 72, 80, 88, 96,
+].map((size) => `${size}px`);
 export const DEFAULT_FONT_SIZE = '16px';
 
 export const LINE_HEIGHTS: readonly StyleOption[] = [
@@ -20,10 +63,40 @@ export const LINE_HEIGHTS: readonly StyleOption[] = [
 ];
 export const DEFAULT_LINE_HEIGHT = '1.7';
 
-export const HIGHLIGHT_COLORS: readonly string[] = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca'];
-export const TEXT_COLORS: readonly string[] = ['#0f172a', '#b91c1c', '#1d4ed8', '#15803d', '#a16207'];
+export const HIGHLIGHT_COLORS: readonly string[] = [
+  '#fef08a', '#fde68a', '#fed7aa', '#fecaca', '#fecdd3', '#fbcfe8',
+  '#f5d0fe', '#e9d5ff', '#ddd6fe', '#c7d2fe', '#bfdbfe', '#bae6fd',
+  '#a5f3fc', '#99f6e4', '#a7f3d0', '#bbf7d0', '#d9f99d', '#e5e7eb',
+];
+
+export const TEXT_COLOR_COLUMNS = 10;
+export const TEXT_COLORS: readonly string[] = [
+  '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
+  '#f87171', '#fb923c', '#fbbf24', '#facc15', '#4ade80', '#2dd4bf', '#38bdf8', '#60a5fa', '#a78bfa', '#f472b6',
+  '#dc2626', '#ea580c', '#d97706', '#ca8a04', '#16a34a', '#0d9488', '#0284c7', '#2563eb', '#7c3aed', '#db2777',
+  '#991b1b', '#9a3412', '#92400e', '#854d0e', '#166534', '#115e59', '#075985', '#1e40af', '#5b21b6', '#9d174d',
+];
+
+const SHORT_HEX = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i;
+const LONG_HEX = /^#[0-9a-f]{6}$/i;
+
+export function pickerColor(value: unknown, fallback = '#000000'): string {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const color = value.trim();
+  if (LONG_HEX.test(color)) {
+    return color.toLowerCase();
+  }
+  const short = SHORT_HEX.exec(color);
+  return short === null
+    ? fallback
+    : `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`.toLowerCase();
+}
 
 const MAX_STYLE_VALUE_LENGTH = 64;
+const PIXEL_SIZE = /^([1-9]\d{0,2})px$/;
+const TYPED_SIZE = /^(\d+(?:[.,]\d+)?|[.,]\d+)\s*(?:px)?$/i;
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const NAMED_COLOR = /^[a-z]{3,20}$/i;
 const CSS_NUMBER = String.raw`[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:%|deg)?`;
@@ -87,7 +160,36 @@ export function safeFontFamily(value: unknown): string | undefined {
 
 export function safeFontSize(value: unknown): string | undefined {
   const size = candidate(value);
-  return size !== undefined && FONT_SIZES.includes(size) ? size : undefined;
+  const match = size === undefined ? null : PIXEL_SIZE.exec(size);
+  if (match === null) {
+    return undefined;
+  }
+  const pixels = Number(match[1]);
+  return pixels >= FONT_SIZE_MIN_PX && pixels <= FONT_SIZE_MAX_PX ? `${pixels}px` : undefined;
+}
+
+export function fontSizePixels(size: string): number {
+  return Number.parseInt(size, 10);
+}
+
+export function fontSizeFromInput(text: string): string | undefined {
+  const match = TYPED_SIZE.exec(text.trim());
+  if (match === null) {
+    return undefined;
+  }
+  const typed = Math.round(Number(match[1].replace(',', '.')));
+  const pixels = Math.min(FONT_SIZE_MAX_PX, Math.max(FONT_SIZE_MIN_PX, typed));
+  return `${pixels}px`;
+}
+
+export function stepFontSize(size: string, direction: 1 | -1): string {
+  const pixels = fontSizePixels(size);
+  const stops = FONT_SIZES.map(fontSizePixels);
+  const next =
+    direction === 1
+      ? stops.find((stop) => stop > pixels)
+      : [...stops].reverse().find((stop) => stop < pixels);
+  return `${next ?? pixels}px`;
 }
 
 export function safeLineHeight(value: unknown): string | undefined {

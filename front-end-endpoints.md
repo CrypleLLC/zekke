@@ -50,6 +50,9 @@ STALE_KEY_GENERATION` when it is not the scope's current one.
 - [20. PIN Endpoints (OPRF)](#20-pin-endpoints-oprf)
 - [21. Credentials Endpoints](#21-credentials-endpoints--the-password-store)
 - [22. Pairing Endpoints](#22-pairing-endpoints--linking-the-browser-extension)
+- [23. Billing Endpoints](#23-billing-endpoints)
+- [24. Notifications Endpoints](#24-notifications-endpoints)
+- [25. Client Version Endpoints](#25-client-version-endpoints)
 
 ---
 
@@ -171,6 +174,8 @@ path** is not in that category — see `405` below — and does return the envel
 | 400  | `INVALID_BATCH`        | §7 sign-up and §19 only: a device batch or genesis broke a chain or completeness rule. The message says which. Only callers who already proved the root, or who hold a device JWT, can reach it.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 401  | `UNAUTHORIZED`         | Missing, malformed, expired or invalid `Authorization: Bearer` token, **or a valid token whose device has been removed**. Start over: sign in with another device, or re-enrol with the seed.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 401  | `INVALID_CREDENTIALS`  | A device signature or a root signature failed to verify, a PIN proof was wrong or missing, **or the JWT is valid but its account no longer exists**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 403  | `PLAN_REQUIRED`        | The account's plan does not include the feature this route belongs to (`plan.features` in `GET /users/me`). Not an authentication failure: offer the upgrade.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 426  | `UPGRADE_REQUIRED`     | Only for a client that sends `Zekke-Client` ([§25](#25-client-version-endpoints)): this version is below the platform's minimum. Never sent to the web app. Show an update screen; do not retry.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 404  | `NOT_FOUND`            | Resource does not exist or is not yours; **the calling device lacks the route's scope, or is not full on a delete**; **or** authentication failed on an auth endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 405  | `METHOD_NOT_ALLOWED`   | The path exists but does not accept this verb.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 409  | `CONFLICT`             | The resource is not in a state that accepts the request.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -179,7 +184,7 @@ path** is not in that category — see `405` below — and does return the envel
 | 422  | `FOLDER_INTO_ITSELF`   | A folder move would put it inside itself or its own subtree.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 409  | `TOO_MANY_DEVICES`     | §19 only: the account already has `DEVICES_MAX_PER_ACCOUNT` active devices.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 413  | `BAD_REQUEST`          | `POST /files` only ([§17](#17-files-endpoints)): the declared object exceeds `FILES_MAX_OBJECT_BYTES`. **Note the code is `BAD_REQUEST`, not a code of its own** — branch on the status, not the code, to tell this from an ordinary field rejection.                                                                                                                                                                                                                                                                                                                                                                                                |
-| 429  | `TOO_MANY_REQUESTS`    | Four budgets. Per client address: one shared by the public routes (`/sign-up`, `/sign-in`, `/auth/verify`, `/users/lookup`, `/devices/enrol`, `/devices/enrol/chain`, `/oprf/account/evaluate`), one on the device PIN routes (`/oprf/devices/{id}/evaluate`, `/confirm`), and one shared by `PUT /users/username` and `GET /users/resolve`. Per account: one on `POST /files`. The address or account sent more requests than that budget allows in the current window. `Retry-After` is the number of seconds to wait. **It says nothing about the account** — do not show it as an authentication failure, and do not retry before `Retry-After`. |
+| 429  | `TOO_MANY_REQUESTS`    | Four budgets. Per client address: one shared by the public routes (`/sign-up`, `/sign-in`, `/auth/verify`, `/users/lookup`, `/devices/enrol`, `/devices/enrol/chain`, `/oprf/account/evaluate`), one on the device PIN routes (`/oprf/devices/{id}/evaluate`, `/confirm`), and one shared by `PUT /users/username` and `GET /users/resolve`. Per account: one on `POST /files`, and one on `POST /billing/ticket`. The address or account sent more requests than that budget allows in the current window. `Retry-After` is the number of seconds to wait. **It says nothing about the account** — do not show it as an authentication failure, and do not retry before `Retry-After`. |
 | 500  | `INTERNAL_ERROR`       | Unexpected server/database failure. Safe to retry once.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 503  | `SERVICE_UNAVAILABLE`  | The per-address budgets above only — `POST /files` lets the request through instead: the rate limiter could not reach its store, so the request was refused rather than let through unmetered. Retry after a short wait.                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 503  | `NOT_READY`            | `GET /ready` only ([§6](#6-service-endpoints)): a dependency did not answer. Never returned by any other endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -378,7 +383,16 @@ Your own account, as the API sees it. Takes no parameters: the account is the on
     "uuid": "0c892e57-93cf-423a-a9e9-fee5a9f87681",
     "paranoid": false,
     "retention_days": 30,
-    "created_at": "2026-07-26T12:00:00Z"
+    "created_at": "2026-07-26T12:00:00Z",
+    "plan": {
+      "code": "premium_1",
+      "state": "active",
+      "paid_until": "2027-10-04T00:00:00Z",
+      "renews": true,
+      "storage_quota_bytes": 100000000000,
+      "retention_days": 30,
+      "features": ["inbox"]
+    }
   }
 }
 ```
@@ -391,6 +405,22 @@ Your own account, as the API sees it. Takes no parameters: the account is the on
 | `paranoid`       | **`true` = Paranoid Mode**, `false` = Standard Mode. Always present, never omitted.                                                                                                       |
 | `retention_days` | How many days deleted documents and Drive files wait in the Trash before they are destroyed. `0` keeps nothing: say so before a delete, and show an empty Trash.                          |
 | `created_at`     | Account creation.                                                                                                                                                                         |
+| `plan`           | What the account is entitled to — see below. Always present.                                                                                                                              |
+
+**`plan`** is the account's entitlement, written by the billing service and enforced here:
+
+| Field                 | Notes |
+| --------------------- | ----- |
+| `code`                | `free`, `premium_1` or `premium_2`: what was last bought. **Show it; never gate on it.** |
+| `state`               | `free`, `active` or `grace`. `grace` means the paid time ran out: everything stays readable and deletable, uploads stop above the free quota, and `grace_ends_at` says when the drive is cut down to it. |
+| `paid_until`          | Absent on an account that never paid. |
+| `renews`              | `true` while a card subscription renews; a Bitcoin purchase never does. |
+| `grace_ends_at`       | Present only in `grace`. |
+| `storage_quota_bytes` | The quota `POST /files` enforces now. |
+| `retention_days`      | Same value as the top-level field. |
+| `features`            | **Gate premium screens on this list**, never on `code`. The server refuses a feature the list lacks with `403 PLAN_REQUIRED`. |
+
+Read it again after a purchase: the plan is not in the JWT, and nothing pushes it to the client.
 
 **Call this on first launch after a restore.** `paranoid` is the one fact a client cannot derive and cannot safely cache: it decides whether to prompt for a PIN, and a reinstall wipes local state. The alternative — probing `/sign-in` and reading the `404` — burns a challenge, costs the 350 ms floor, and returns the same `404` for a wrong PIN, a wrong seed and a nonexistent account. See [§5.4](./front-end-guide.md#54-standard-mode-vs-paranoid-mode).
 
@@ -1360,6 +1390,99 @@ a parent or target that is deleted or not yours is `404`.
 **Errors:** `400 INVALID_BODY` · `400 BAD_REQUEST` · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` ·
 `404 NOT_FOUND` · `409 STALE_KEY_GENERATION` · `422 FOLDER_TOO_DEEP` · `422 FOLDER_INTO_ITSELF`.
 
+### Attachments — the images in a document
+
+Read [ADR 00020](../api-general/docs/adr/00020_document_attachments.md) first. **An image is an attachment of one
+document**: an object in the drive's storage, sealed in the browser with the drive's chunk envelope
+under **its own random key**, which lives inside the document's CRDT (in its attachment map, never
+in a node attribute). The server keeps a ledger row per attachment and nothing to unwrap: no
+`wrapped_dek`, no name, no type. **A thumbnail is an attachment of its own**; which attachment is
+whose thumbnail is in the CRDT, never on the wire.
+
+**These routes exist only where the drive is configured** — elsewhere every one is `404`. All need
+the `documents` scope. The bytes never pass through the API: they go to R2 on a presigned URL, as in
+the drive ([§17](#17-files-endpoints)).
+
+**An attachment row:**
+
+```json
+{
+  "id": "6c2f3d4e-5b6a-4c7d-9e8f-0a1b2c3d4e5f",
+  "document_id": "3f6b0d3e-8f2a-4d1c-9a5e-2b7c1d4e6f80",
+  "size_bytes": 1048613,
+  "ciphertext_sha256": "e3b0c442…",
+  "state": "ok",
+  "replica_state": "pending",
+  "created_at": "2026-10-05T12:00:00Z",
+  "updated_at": "2026-10-05T12:00:03Z"
+}
+```
+
+`state` is `pending` until completion, then `ok` (`missing` if R2 lost it). `ciphertext_sha256` is
+absent while pending. `size_bytes` is the **sealed, padded** size, and it counts against the quota.
+
+#### `POST /documents/{id}/attachments` — reserve and get an upload URL
+
+`{ "id": "…"?, "size_bytes": 1048613 }`. **Send a client `id`**: a replay returns the same row with
+`200` instead of `201`, and a fresh URL for the same object if it is still pending.
+
+**`201 Created`** → the row plus `upload: { url, size, expires_at }`. **`PUT` the sealed bytes to
+`url` with exactly `size` bytes** before `expires_at`; nothing else is accepted. A replay of a stored
+attachment has no `upload`.
+
+**Body limit 1 MiB**, unlike the rest of this section, and **rate limited per account** (300 per
+10 minutes by default, separate from the drive's).
+
+**Errors:** `400 BAD_REQUEST` (missing or non-positive `size_bytes`) · `400 INVALID_PARAM` ·
+`404 NOT_FOUND` (no such live document) · `413 BAD_REQUEST` (above 8 MiB + 37 bytes — a 5 MB image
+never gets there after the client prepares it) · `429 TOO_MANY_REQUESTS` ·
+`507 QUOTA_EXCEEDED` (files and attachments together would pass the quota).
+
+#### `PATCH /documents/{id}/attachments/{attachment_id}` — complete
+
+`{ "ciphertext_sha256": "<64 lowercase hex>" }`, the SHA-256 of the bytes you uploaded. The server
+reads the object's size from R2 and only then stores the row. **`200 OK`** → the row, `state: "ok"`.
+Completing a stored attachment again returns it unchanged.
+
+**Errors:** `400 BAD_REQUEST` (malformed hash) · `404 NOT_FOUND` (no row, or no object in R2 yet —
+retry the `PUT`) · `409 CONFLICT` (the object is not the declared size; abandon and start again).
+
+#### `DELETE /documents/{id}/attachments/{attachment_id}/upload` — abandon
+
+Gives a **pending** reservation back and deletes whatever reached R2. **`204`.** A stored
+attachment is `404`: it leaves through the references below. One you never abandon is swept after a
+day.
+
+#### `GET /documents/{id}/attachments/{attachment_id}` — download
+
+**`200 OK`** → the row plus `url` and `expires_at`: a presigned `GET` for the sealed bytes. Fetch,
+check the hash against the bytes you received, open with the key from the CRDT. **Cache the
+decrypted image as a `blob:` URL**; do not re-request per render. A pending attachment is `404`. The
+owner can still read the images of a document in the Trash.
+
+#### `GET /documents/{id}/attachments`
+
+**`200 OK`** → `[row, …]`, every live attachment of the document, oldest first.
+
+#### `PUT /documents/{id}/attachments/references` — what the document still shows
+
+`{ "ids": ["…", …] }` — **every** attachment id the document's snapshot still references, at most
+10,000; `[]` for a document without images. Send it **after each compaction**. **`200 OK`** →
+`{ "referenced": 1, "unreferenced": 2 }`: how many were brought back and how many were newly marked.
+
+A stored attachment missing from the list is marked unreferenced, and **30 days later it is
+deleted**; listing it again before then cancels that. Pending uploads are never marked. Errors:
+`400 BAD_REQUEST` (missing `ids`, or more than 10,000) · `400 INVALID_PARAM` · `404 NOT_FOUND`.
+
+#### `GET /documents/attachments/usage`
+
+**`200 OK`** → `{ "used_bytes", "file_bytes", "attachment_bytes", "quota_bytes" }`. The same quota as
+`GET /files/usage`, for a device that holds `documents` and not `files`.
+
+**What happens to attachments without a request:** trashing the document keeps them; restoring
+brings them back; purging it — by hand, by retention or by deleting the account — deletes them. A
+**downgrade never deletes them**: drive files are cut until files and attachments fit.
+
 ---
 
 ## 17. Files Endpoints
@@ -1561,7 +1684,12 @@ Rows with `r2_state: "pending"` are uploads that have not completed. They are no
 
 What a storage bar needs.
 
-**`200 OK`:** `{ "used_bytes": 8454149, "stored_bytes": 65573, "quota_bytes": 524288000, "file_count": 2 }`
+**`200 OK`:** `{ "used_bytes": 8454149, "stored_bytes": 65573, "quota_bytes": 524288000, "file_count": 2, "attachment_bytes": 0 }`
+
+**Both sums include the images in documents** ([§16 Attachments](#attachments--the-images-in-a-document)):
+the quota is one number over files and attachments. `attachment_bytes` is their share of
+`used_bytes`, so a bar can show how much of the space is images in documents. `file_count` counts
+files only.
 
 `quota_bytes` is `users.storage_quota_bytes` — a ceiling, not a plan. The default is 500 MB.
 
@@ -1845,6 +1973,39 @@ For `item_type: "file"` only. Returns a short-lived presigned `GET` for the owne
 **`200 OK`** → `{ share_id, wrapped_dek, url, expires_at }`.
 
 **Errors:** `400 BAD_REQUEST` (the share is not a file) · `404 NOT_FOUND`.
+
+### `GET /shares/{id}/attachments/{attachment_id}`
+
+For `item_type: "document"` only, needs `documents`. A shared document is read from the owner's
+row, and so are its images: this signs a download for an attachment **of the shared document**.
+
+**`200 OK`** → `{ share_id, …the attachment row, url, expires_at }`. The key is in the snapshot the
+share already gave you.
+
+**Errors:** `400 BAD_REQUEST` (the share is not a document) · `404 NOT_FOUND` (not the recipient;
+an attachment of another document or not yet stored; the document is in the owner's Trash).
+
+### `POST /shares/{id}/attachments/copy`
+
+The second half of **Copy to my own account** for a document with images. First create your own
+document from the decrypted snapshot, with fresh attachment ids in its attachment map; then:
+
+```json
+{
+  "document_id": "<your new document>",
+  "attachments": [{ "source_id": "<the owner's attachment id>", "id": "<its id in your document>" }]
+}
+```
+
+At most 200 per request. The server copies each object inside the storage without reading it and
+records it in your document, **charged to your quota**. **`200 OK`** → `{ "attachments": [row, …] }`,
+already stored. Always send `id`: a retry returns the copies already made and charges nothing twice.
+The keys do not change — the copied bytes are the same ciphertext under the same attachment keys,
+which your new document's map carries.
+
+**Errors:** `400 BAD_REQUEST` (not a document share; a missing or non-canonical id; nothing to copy;
+more than 200) · `404 NOT_FOUND` (a source attachment not in the shared document or not stored;
+your document does not exist; the document is in the owner's Trash) · `507 QUOTA_EXCEEDED`.
 
 ### `DELETE /shares/{id}`
 
@@ -2377,3 +2538,140 @@ Rate limited per address (**fails closed**), behind the response floor.
 ### `GET /pairings/{claim_id}` — public
 
 The `claim_id` is the bearer. **`200 OK`:** `{ "status" }`. When it is `linked`, the extension signs in with its own key (`POST /sign-in`), verifies the chain from the root key the fingerprint covered, and opens its keyring wraps.
+
+---
+
+## 23. Billing Endpoints
+
+Buying a plan happens in the **billing service**, a separate origin with its own routes
+(`billing/README.md`). The API's part is to say who is buying, without telling billing who the
+account is.
+
+### `POST /billing/ticket` — 🔒 protected
+
+Any device. No body. Rate limited per account (**fails open**). Mounted only where billing is
+configured; elsewhere the route is absent.
+
+**`201 Created`**
+
+```json
+{
+  "message": "Billing ticket issued",
+  "data": {
+    "ticket": "eyJhbGciOiJFZERTQSIs…",
+    "expires_at": "2026-10-03T12:10:00Z"
+  }
+}
+```
+
+Send it to the billing service as `Authorization: Bearer <ticket>` — on `POST /checkout`,
+`GET /checkout/{id}`, `POST /checkout/{id}/quote` and `POST /portal`. It is an opaque token for this
+client: do not parse it, do not store it, ask for a new one when it has expired (ten minutes). It
+names a random billing reference, never the account's address, uuid or username.
+
+**After paying**, poll `GET /users/me` until `plan` changes; never trust the provider's redirect.
+
+**Errors:** `401 UNAUTHORIZED` · `429 TOO_MANY_REQUESTS` · `500 INTERNAL_ERROR`.
+
+---
+
+## 24. Notifications Endpoints
+
+Notices about the account — a purchase, a failed payment, a plan about to end, files about to be
+deleted. **The server sends a `kind` and `params`, never text**: build every sentence client-side,
+and show a generic notice for a kind you do not know.
+
+### `GET /notifications` — 🔒 protected
+
+Any device. Newest first, paginated like every list (`limit` default 50, at most 200; `cursor`).
+
+**`200 OK`**
+
+```json
+{
+  "message": "Notifications retrieved",
+  "data": {
+    "notifications": [
+      {
+        "id": "uuid",
+        "kind": "data_loss_countdown",
+        "params": { "days_left": 3, "over_bytes": 2147483648, "grace_ends_at": "2026-10-06T12:00:00Z" },
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    ],
+    "unread_count": 1
+  },
+  "page": { "has_more": false }
+}
+```
+
+`read_at` is present once the notification was marked read. `unread_count` is the account's whole
+unread count, whatever the page — **`?limit=1` is the cheap way to read it** for a badge. Expired
+notifications (90 days) are never listed.
+
+| `kind` | `params` |
+| ------ | -------- |
+| `purchase_succeeded`, `subscription_renewed` | `plan`, `paid_until` |
+| `payment_failed` | `plan` |
+| `refunded` | `plan`, `paid_until`? |
+| `expiring` | `plan`, `days`, `paid_until` |
+| `grace_started` | `reason` (`ended` or `smaller_plan`), `plan`, `grace_ends_at` |
+| `data_loss_countdown` | `days_left`, `over_bytes`, `grace_ends_at` |
+| `data_deleted` | `files`, `deleted_bytes` |
+
+Every parameter may be absent; write the sentence without it. A notification about the plan is a
+cue to read `GET /users/me` again.
+
+**Errors:** `400 INVALID_PARAM` (bad `limit` or `cursor`) · `401 UNAUTHORIZED` · `500 INTERNAL_ERROR`.
+
+### `POST /notifications/read` — 🔒 protected
+
+Any device, no signature. `{ "ids": ["uuid", …] }` (1–200 canonical ids) or `{ "all": true }` →
+**`204`**. Ids that are not yours, or already read, are ignored.
+
+**Errors:** `400 INVALID_BODY` · `400 BAD_REQUEST` (no ids, more than 200, a non-canonical id, or
+both `ids` and `all`) · `401 UNAUTHORIZED` · `500 INTERNAL_ERROR`.
+
+---
+
+## 25. Client Version Endpoints
+
+For the browser extension and the mobile apps. **The web app does not use any of this**: it is always
+the deployed build, and it never sends custom headers.
+
+**Send `Zekke-Client: <platform>/<version>` on every request** — `extension/0.1.0`, `ios/1.4.2`,
+semantic versions only. A version below the platform's minimum gets **`426 UPGRADE_REQUIRED`** on
+every route except `/health`, `/ready` and this one: stop, and show an update screen.
+
+### `GET /clients/{platform}/policy` — public
+
+`platform` is `ios`, `android` or `extension`. Cached for five minutes.
+
+**`200 OK`**
+
+```json
+{
+  "message": "Client policy",
+  "data": {
+    "platform": "extension",
+    "min_supported": "0.1.0",
+    "latest": "0.3.0",
+    "deprecated_below": "0.2.0",
+    "deprecation_ends": "2026-12-01T00:00:00Z"
+  }
+}
+```
+
+Read it when the app starts:
+
+| Your version | Do |
+| ------------ | -- |
+| below `min_supported` | Block: an update screen and nothing else. The API refuses you anyway |
+| below `deprecated_below` | Work, and warn that this version stops working on `deprecation_ends` |
+| below `latest` | Work; you may mention an update |
+| otherwise | Nothing |
+
+`deprecated_below` and `deprecation_ends` are present together or not at all. **Fail open**: if the
+policy cannot be read, carry on.
+
+**Errors:** `404 NOT_FOUND` (no policy for that platform yet) · `500 INTERNAL_ERROR`.

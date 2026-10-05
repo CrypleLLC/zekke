@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ACCOUNT_MENU_COPY, SETTINGS_TABS, type SettingsTabId } from '@/lib/app';
 import { useZekke } from '@/components/session/ZekkeProvider';
 import AccountScreen from './AccountScreen';
+import PlanScreen from '@/components/plan/PlanScreen';
 import DevicesScreen from './DevicesScreen';
 import PinScreen from './PinScreen';
 import SharingScreen from '@/components/sharing/SharingScreen';
@@ -15,13 +16,22 @@ const PANELS: Record<SettingsTabId, () => React.JSX.Element> = {
   devices: DevicesScreen,
   username: UsernameScreen,
   pin: PinScreen,
+  plan: PlanScreen,
   account: AccountScreen,
 };
 
-export default function SettingsModal({ onClose }: { onClose: () => void }) {
+export default function SettingsModal({
+  onClose,
+  initialTab,
+}: {
+  onClose: () => void;
+  initialTab?: SettingsTabId;
+}) {
   const { holds } = useZekke();
   const tabs = SETTINGS_TABS.filter((entry) => entry.id !== 'sharing' || holds('sharing'));
-  const [tab, setTab] = useState<SettingsTabId>(tabs[0].id);
+  const [tab, setTab] = useState<SettingsTabId>(
+    tabs.find((entry) => entry.id === initialTab)?.id ?? tabs[0].id,
+  );
   const Panel = PANELS[tab];
 
   return (

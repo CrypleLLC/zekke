@@ -5,7 +5,7 @@ import {
   type PDFFont,
   type PDFPage,
 } from "pdf-lib";
-import { encode } from "uqr";
+import { qrModulePath, qrModules } from "@/lib/qr";
 import { assertValidMnemonic } from "@/lib/keys";
 import { GLYPH_ADVANCE, GLYPH_PATHS, GLYPH_UNITS_PER_EM } from "./glyphs";
 
@@ -97,32 +97,10 @@ export function recoveryKitContent(
 }
 
 export function recoveryKitQrModules(payload: string): boolean[][] {
-  return encode(payload, {
-    ecc: RECOVERY_KIT_QR_ERROR_CORRECTION,
-    border: RECOVERY_KIT_QR_QUIET_ZONE_MODULES,
-  }).data;
+  return qrModules(payload, RECOVERY_KIT_QR_ERROR_CORRECTION, RECOVERY_KIT_QR_QUIET_ZONE_MODULES);
 }
 
-export function qrModulePath(modules: readonly (readonly boolean[])[]): string {
-  const runs: string[] = [];
-
-  modules.forEach((row, y) => {
-    let x = 0;
-    while (x < row.length) {
-      if (!row[x]) {
-        x += 1;
-        continue;
-      }
-      const start = x;
-      while (x < row.length && row[x]) {
-        x += 1;
-      }
-      runs.push(`M${start} ${y}H${x}V${y + 1}H${start}Z`);
-    }
-  });
-
-  return runs.join("");
-}
+export { qrModulePath };
 
 export function recoveryKitGridCell(
   index: number,

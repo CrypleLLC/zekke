@@ -28,6 +28,9 @@ can be unit-tested under the existing node-environment Vitest setup; the React c
 | `clipboard.ts`     | Copying a secret, and clearing it off the clipboard afterwards                                                                                                                                                                                                                                                                                   |
 | `pin-entry.ts`     | The six-box PIN entry: typing, pasting, backspace and arrows over one contiguous value ([One box per digit](#one-box-per-digit--pin-entryts))                                                                                                                                                                                                    |
 | `secret-field.ts`  | Masking a secret or a PIN while it is typed, without turning it into a password field                                                                                                                                                                                                                                                            |
+| `notifications.ts` | The sentence, tone and age of each notification kind (`notificationView`), plan names, and the bell's labels. Every parameter is optional and a wrong type is ignored, so a missing value shortens a sentence and never prints `undefined`; an unknown kind becomes a generic notice |
+| `build.ts` | Whether this tab runs an older deploy than the server: the build id `next.config.ts` pins into every bundle, compared with `/build-id` |
+| `plan.ts` | The Plan tab's sentences and view models: plan summary, prices by plan, the grace warning (`graceView`), the quote countdown, billing refusals in words, and reading the return from Stripe |
 
 ## Plaintext the browser would otherwise send away
 
@@ -361,6 +364,25 @@ account's `retention_days` and never by a plan name.
   names what could not be opened by its kind (_Untitled document_, _Unreadable folder_), and
   `trashEntryDetail` says where an entry came from and how much a folder holds.
 
+## Spreadsheets in the documents copy
+
+`documents.ts` serves both kinds of item in the Documents tab. `documentTitle(title, kind)` falls
+back to _Untitled document_ or _Untitled spreadsheet_, `documentHref(id, kind)` routes to `/docs/<id>`
+or `/sheets/<id>`, and `documentTypeLabel(kind)` (in `listing.ts`) is the list's _Type_ column. A tile
+carries its `kind` and, for a readable spreadsheet, the `grid` its miniature draws.
+
+- `capacityRefusalMessage(refusal)` is what the editor says when a write would not fit: how many
+  more cells the spreadsheet has room for and how many the change needed — both from
+  `cellsInBytes`, so they are estimates, and said as _about_ — and that nothing was changed; a
+  full spreadsheet is called full, and a cell too large for one delta is named as such.
+- `snapshotCapacityMessage(capacity)` is the line under the title: nothing when `ok`, a warning when
+  `near`, and when `over` that edits are kept but the spreadsheet can no longer be compacted.
+- `NEW_ITEM_LABELS` names the add menu and its options.
+- `spreadsheet-files.ts` is what importing and downloading say: `importedMessage` names the file,
+  its sheets and, with counts, what did not come across (`lostFeaturesLabel`); `importErrorMessage`
+  explains a refused file — wrong format, too large, a cell too large — without quoting anything
+  from it, and `UNREADABLE_IMPORT` covers a file that would not parse.
+
 ## The notes file grid
 
 `buildNoteTiles` is the notes counterpart of `buildVaultRows`: full `NoteRecord`s paired with
@@ -464,6 +486,12 @@ Filling the bar with `used_bytes` would show space consumed by a file the user c
 upload that died at its first part looks identical to a stored one. Filling it with `stored_bytes`
 and hiding the rest is the opposite failure: the account gets refused an upload while the bar shows
 room. **`nearlyFull` keys on `used_bytes`**, because that is the number that will do the refusing.
+
+**Both sums include the images in documents** — attachments count against the same quota
+([ADR 00020](../../../../api-general/docs/adr/00020_document_attachments.md)) — so the bar is the
+whole quota, and `imagesSummary` names their share ("including 3.2 MB of images in documents")
+from `attachment_bytes` when there are any. The grace and downgrade copy (`notifications.ts`,
+`plan.ts`) says the same thing the other way round: images count, and are never the ones deleted.
 
 ## Previews outlive the grid that fetched them
 
@@ -614,8 +642,35 @@ The drive and documents also remember whether they are drawn as a grid or a list
 `zekke_drive_layout`, `zekke_documents_layout` — through the same exemption and for the same
 reason: one of two literal words, read back through a guard that falls back to the grid.
 
+The document editor remembers whether it is drawn as pages or as continuous text —
+`zekke_document_view`, through `readDocumentView` / `writeDocumentView` — and whether its rulers
+are hidden — `zekke_document_rulers`, through `readRulersShown` / `writeRulersShown`, which stores
+`hidden` and removes the key when they are shown again — and, the same way, whether its outline
+panel is collapsed — `zekke_document_outline`, through `readOutlineShown` / `writeOutlineShown` —
+on the same terms: one
+of two literal words, a guard that falls back to `pages`, no content and nothing about which
+document. It is per browser rather than per document because it is how this person likes to read,
+not something the document is. The editor is only ever rendered on the client, after the document
+has been decrypted, so it reads the stored value in its first render without the hydration
+mismatch the grids have to avoid.
+
 Reading it during render would desynchronise the server-rendered HTML from the first client paint,
 so each screen starts at `defaultIconSize(grid)` and reads the stored value in an effect.
+
+## Chrome that gets out of the way — `scroll-chrome.ts`
+
+The document editor's mobile chrome
+([`components/documents`](../../components/documents/README.md#mobile-chrome)) is two decisions,
+kept here so they are unit-tested:
+
+- `nextQuickReturn(state, scrollY, { threshold, revealZone })` — whether the bar is hidden. Travel
+  is accumulated per direction and reset when the direction flips, so a scroll down hides it only
+  after `threshold` pixels of going down, and any scroll up of the same distance brings it back,
+  wherever the reader is. Within `revealZone` of the top it is always shown. An unchanged position
+  returns the same state object, so a re-read costs no render.
+- `keyboardInset(layoutHeight, visualHeight, visualOffsetTop)` — how far the on-screen keyboard
+  reaches into the layout viewport: the part the visual viewport no longer covers, never negative,
+  rounded to a pixel. Zero where the browser already shrank the layout viewport.
 
 ## A modal, minus the DOM
 
