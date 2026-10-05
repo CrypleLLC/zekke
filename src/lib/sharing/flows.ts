@@ -5,7 +5,12 @@ import { refreshKeyrings } from '@/lib/keyrings/api';
 import { deriveShareSubkey } from '@/lib/keyrings/crypto';
 import { getSecret, createSecret } from '@/lib/secrets';
 import { getNote, createNote } from '@/lib/notes';
-import { getDocument, createDocumentFromSnapshot, openUpdate } from '@/lib/documents';
+import { getDocument, createDocumentFromSnapshot, deleteDocument, openUpdate } from '@/lib/documents';
+import {
+  copySharedAttachments,
+  getAttachmentUsage,
+  remapAttachments,
+} from '@/lib/documents/attachments';
 import {
   decryptStream,
   getFileDownload,
@@ -74,6 +79,13 @@ export class AlreadyConnectedError extends Error {
   constructor(username: string) {
     super(`this account is already connected to "${username}"`);
     this.name = 'AlreadyConnectedError';
+  }
+}
+
+export class SharedImagesQuotaError extends Error {
+  constructor(readonly neededBytes: number) {
+    super('the images in this document do not fit in your storage');
+    this.name = 'SharedImagesQuotaError';
   }
 }
 
@@ -661,8 +673,8 @@ export async function copySharedItem(
           throw new NothingToCopyError();
         }
         snapshot = await openUpdate(ciphertext, dek);
-        const document = await createDocumentFromSnapshot(context, snapshot);
-        return { type: 'document', id: document.id };
+        const id = await copySharedDocument(context, share.id, snapshot);
+        return { type: 'document', id };
       } finally {
         dek.fill(0);
         snapshot?.fill(0);
@@ -688,6 +700,42 @@ export async function copySharedItem(
         bytes.fill(0);
       }
     }
+  }
+}
+
+async function copySharedDocument(
+  context: AuthedContext,
+  shareId: string,
+  snapshot: Uint8Array,
+): Promise<string> {
+  const remapped = remapAttachments(snapshot);
+
+  try {
+    if (remapped.pairs.length > 0) {
+      const usage = await getAttachmentUsage(context);
+      if (usage.used_bytes + remapped.storedBytes > usage.quota_bytes) {
+        throw new SharedImagesQuotaError(remapped.storedBytes);
+      }
+    }
+
+    const document = await createDocumentFromSnapshot(context, remapped.snapshot);
+    if (remapped.pairs.length === 0) {
+      return document.id;
+    }
+
+    try {
+      await copySharedAttachments(context, shareId, document.id, remapped.pairs);
+    } catch (error) {
+      await deleteDocument(context, document.id).catch(() => undefined);
+      if (error instanceof ApiError && error.code === 'QUOTA_EXCEEDED') {
+        throw new SharedImagesQuotaError(remapped.storedBytes);
+      }
+      throw error;
+    }
+
+    return document.id;
+  } finally {
+    remapped.snapshot.fill(0);
   }
 }
 

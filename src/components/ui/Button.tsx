@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { CONTENT_GUTTER, contentMeasure, FLOATING_SPREAD_GUTTER, SIDEBAR_INSET } from '@/lib/app';
 import { PlusIcon } from './icons';
@@ -136,6 +137,103 @@ export function FloatingAddButton({
         >
           <PlusIcon className="h-6 w-6 shrink-0" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+export interface FloatingAddOption {
+  label: string;
+  icon?: ReactNode;
+  onSelect: () => void;
+}
+
+export function FloatingAddMenu({
+  label,
+  options,
+  spread = false,
+  disabled = false,
+}: {
+  label: string;
+  options: readonly FloatingAddOption[];
+  spread?: boolean;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const holder = useRef<HTMLDivElement>(null);
+  const firstItem = useRef<HTMLButtonElement>(null);
+  const frame = spread
+    ? `${contentMeasure(true)} ${FLOATING_SPREAD_GUTTER}`
+    : `${contentMeasure(false)} ${CONTENT_GUTTER}`;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    firstItem.current?.focus();
+
+    function onPointerDown(event: MouseEvent) {
+      if (!holder.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 ${SIDEBAR_INSET}`}>
+      <div className={`mx-auto flex w-full justify-end ${frame}`}>
+        <div ref={holder} className="pointer-events-auto relative mb-6">
+          {open ? (
+            <div
+              role="menu"
+              aria-label={label}
+              className="absolute bottom-full right-0 mb-3 w-52 overflow-hidden rounded-xl border border-line bg-surface shadow-lg"
+            >
+              {options.map((option, index) => (
+                <button
+                  key={option.label}
+                  ref={index === 0 ? firstItem : undefined}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    option.onSelect();
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-compact font-semibold text-ink-soft transition-colors hover:bg-raised hover:text-ink focus-visible:bg-raised focus-visible:outline-none ${
+                    index > 0 ? 'border-t border-line' : ''
+                  }`}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            title={label}
+            aria-label={label}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            disabled={disabled}
+            onClick={() => setOpen((current) => !current)}
+            className="brand-gradient inline-flex h-14 w-14 cursor-pointer items-center justify-center rounded-full text-white shadow-lift transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ground disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 disabled:shadow-card"
+          >
+            <PlusIcon className={`h-6 w-6 shrink-0 transition-transform duration-200 ${open ? 'rotate-45' : ''}`} />
+          </button>
+        </div>
       </div>
     </div>
   );

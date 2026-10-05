@@ -47,17 +47,42 @@ export function outlineTree(entries: readonly OutlineEntry[]): OutlineNode[] {
   return roots;
 }
 
-export function activeHeadingPos(
-  entries: readonly OutlineEntry[],
-  cursor: number,
-): number | undefined {
-  let active: number | undefined;
+export interface HeadingOffset {
+  pos: number;
+  top: number;
+}
 
-  for (const entry of entries) {
-    if (entry.pos > cursor) {
+export interface ScrollWindow {
+  readingLine: number;
+  viewportBottom: number;
+  atBottom: boolean;
+}
+
+export function headingAtScroll(
+  headings: readonly HeadingOffset[],
+  scroll: ScrollWindow,
+): number | undefined {
+  if (headings.length === 0) {
+    return undefined;
+  }
+
+  if (scroll.atBottom) {
+    const visible = headings.filter((heading) => heading.top < scroll.viewportBottom);
+    if (visible.length > 0) {
+      return visible[visible.length - 1].pos;
+    }
+  }
+
+  let active: number | undefined;
+  for (const heading of headings) {
+    if (heading.top > scroll.readingLine) {
       break;
     }
-    active = entry.pos;
+    active = heading.pos;
+  }
+
+  if (active === undefined && headings[0].top < scroll.viewportBottom) {
+    return headings[0].pos;
   }
 
   return active;

@@ -1390,6 +1390,99 @@ a parent or target that is deleted or not yours is `404`.
 **Errors:** `400 INVALID_BODY` · `400 BAD_REQUEST` · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` ·
 `404 NOT_FOUND` · `409 STALE_KEY_GENERATION` · `422 FOLDER_TOO_DEEP` · `422 FOLDER_INTO_ITSELF`.
 
+### Attachments — the images in a document
+
+Read [ADR 00020](../api-general/docs/adr/00020_document_attachments.md) first. **An image is an attachment of one
+document**: an object in the drive's storage, sealed in the browser with the drive's chunk envelope
+under **its own random key**, which lives inside the document's CRDT (in its attachment map, never
+in a node attribute). The server keeps a ledger row per attachment and nothing to unwrap: no
+`wrapped_dek`, no name, no type. **A thumbnail is an attachment of its own**; which attachment is
+whose thumbnail is in the CRDT, never on the wire.
+
+**These routes exist only where the drive is configured** — elsewhere every one is `404`. All need
+the `documents` scope. The bytes never pass through the API: they go to R2 on a presigned URL, as in
+the drive ([§17](#17-files-endpoints)).
+
+**An attachment row:**
+
+```json
+{
+  "id": "6c2f3d4e-5b6a-4c7d-9e8f-0a1b2c3d4e5f",
+  "document_id": "3f6b0d3e-8f2a-4d1c-9a5e-2b7c1d4e6f80",
+  "size_bytes": 1048613,
+  "ciphertext_sha256": "e3b0c442…",
+  "state": "ok",
+  "replica_state": "pending",
+  "created_at": "2026-10-05T12:00:00Z",
+  "updated_at": "2026-10-05T12:00:03Z"
+}
+```
+
+`state` is `pending` until completion, then `ok` (`missing` if R2 lost it). `ciphertext_sha256` is
+absent while pending. `size_bytes` is the **sealed, padded** size, and it counts against the quota.
+
+#### `POST /documents/{id}/attachments` — reserve and get an upload URL
+
+`{ "id": "…"?, "size_bytes": 1048613 }`. **Send a client `id`**: a replay returns the same row with
+`200` instead of `201`, and a fresh URL for the same object if it is still pending.
+
+**`201 Created`** → the row plus `upload: { url, size, expires_at }`. **`PUT` the sealed bytes to
+`url` with exactly `size` bytes** before `expires_at`; nothing else is accepted. A replay of a stored
+attachment has no `upload`.
+
+**Body limit 1 MiB**, unlike the rest of this section, and **rate limited per account** (300 per
+10 minutes by default, separate from the drive's).
+
+**Errors:** `400 BAD_REQUEST` (missing or non-positive `size_bytes`) · `400 INVALID_PARAM` ·
+`404 NOT_FOUND` (no such live document) · `413 BAD_REQUEST` (above 8 MiB + 37 bytes — a 5 MB image
+never gets there after the client prepares it) · `429 TOO_MANY_REQUESTS` ·
+`507 QUOTA_EXCEEDED` (files and attachments together would pass the quota).
+
+#### `PATCH /documents/{id}/attachments/{attachment_id}` — complete
+
+`{ "ciphertext_sha256": "<64 lowercase hex>" }`, the SHA-256 of the bytes you uploaded. The server
+reads the object's size from R2 and only then stores the row. **`200 OK`** → the row, `state: "ok"`.
+Completing a stored attachment again returns it unchanged.
+
+**Errors:** `400 BAD_REQUEST` (malformed hash) · `404 NOT_FOUND` (no row, or no object in R2 yet —
+retry the `PUT`) · `409 CONFLICT` (the object is not the declared size; abandon and start again).
+
+#### `DELETE /documents/{id}/attachments/{attachment_id}/upload` — abandon
+
+Gives a **pending** reservation back and deletes whatever reached R2. **`204`.** A stored
+attachment is `404`: it leaves through the references below. One you never abandon is swept after a
+day.
+
+#### `GET /documents/{id}/attachments/{attachment_id}` — download
+
+**`200 OK`** → the row plus `url` and `expires_at`: a presigned `GET` for the sealed bytes. Fetch,
+check the hash against the bytes you received, open with the key from the CRDT. **Cache the
+decrypted image as a `blob:` URL**; do not re-request per render. A pending attachment is `404`. The
+owner can still read the images of a document in the Trash.
+
+#### `GET /documents/{id}/attachments`
+
+**`200 OK`** → `[row, …]`, every live attachment of the document, oldest first.
+
+#### `PUT /documents/{id}/attachments/references` — what the document still shows
+
+`{ "ids": ["…", …] }` — **every** attachment id the document's snapshot still references, at most
+10,000; `[]` for a document without images. Send it **after each compaction**. **`200 OK`** →
+`{ "referenced": 1, "unreferenced": 2 }`: how many were brought back and how many were newly marked.
+
+A stored attachment missing from the list is marked unreferenced, and **30 days later it is
+deleted**; listing it again before then cancels that. Pending uploads are never marked. Errors:
+`400 BAD_REQUEST` (missing `ids`, or more than 10,000) · `400 INVALID_PARAM` · `404 NOT_FOUND`.
+
+#### `GET /documents/attachments/usage`
+
+**`200 OK`** → `{ "used_bytes", "file_bytes", "attachment_bytes", "quota_bytes" }`. The same quota as
+`GET /files/usage`, for a device that holds `documents` and not `files`.
+
+**What happens to attachments without a request:** trashing the document keeps them; restoring
+brings them back; purging it — by hand, by retention or by deleting the account — deletes them. A
+**downgrade never deletes them**: drive files are cut until files and attachments fit.
+
 ---
 
 ## 17. Files Endpoints
@@ -1591,7 +1684,12 @@ Rows with `r2_state: "pending"` are uploads that have not completed. They are no
 
 What a storage bar needs.
 
-**`200 OK`:** `{ "used_bytes": 8454149, "stored_bytes": 65573, "quota_bytes": 524288000, "file_count": 2 }`
+**`200 OK`:** `{ "used_bytes": 8454149, "stored_bytes": 65573, "quota_bytes": 524288000, "file_count": 2, "attachment_bytes": 0 }`
+
+**Both sums include the images in documents** ([§16 Attachments](#attachments--the-images-in-a-document)):
+the quota is one number over files and attachments. `attachment_bytes` is their share of
+`used_bytes`, so a bar can show how much of the space is images in documents. `file_count` counts
+files only.
 
 `quota_bytes` is `users.storage_quota_bytes` — a ceiling, not a plan. The default is 500 MB.
 
@@ -1875,6 +1973,39 @@ For `item_type: "file"` only. Returns a short-lived presigned `GET` for the owne
 **`200 OK`** → `{ share_id, wrapped_dek, url, expires_at }`.
 
 **Errors:** `400 BAD_REQUEST` (the share is not a file) · `404 NOT_FOUND`.
+
+### `GET /shares/{id}/attachments/{attachment_id}`
+
+For `item_type: "document"` only, needs `documents`. A shared document is read from the owner's
+row, and so are its images: this signs a download for an attachment **of the shared document**.
+
+**`200 OK`** → `{ share_id, …the attachment row, url, expires_at }`. The key is in the snapshot the
+share already gave you.
+
+**Errors:** `400 BAD_REQUEST` (the share is not a document) · `404 NOT_FOUND` (not the recipient;
+an attachment of another document or not yet stored; the document is in the owner's Trash).
+
+### `POST /shares/{id}/attachments/copy`
+
+The second half of **Copy to my own account** for a document with images. First create your own
+document from the decrypted snapshot, with fresh attachment ids in its attachment map; then:
+
+```json
+{
+  "document_id": "<your new document>",
+  "attachments": [{ "source_id": "<the owner's attachment id>", "id": "<its id in your document>" }]
+}
+```
+
+At most 200 per request. The server copies each object inside the storage without reading it and
+records it in your document, **charged to your quota**. **`200 OK`** → `{ "attachments": [row, …] }`,
+already stored. Always send `id`: a retry returns the copies already made and charges nothing twice.
+The keys do not change — the copied bytes are the same ciphertext under the same attachment keys,
+which your new document's map carries.
+
+**Errors:** `400 BAD_REQUEST` (not a document share; a missing or non-canonical id; nothing to copy;
+more than 200) · `404 NOT_FOUND` (a source attachment not in the shared document or not stored;
+your document does not exist; the document is in the owner's Trash) · `507 QUOTA_EXCEEDED`.
 
 ### `DELETE /shares/{id}`
 

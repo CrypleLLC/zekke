@@ -7,13 +7,13 @@ no item type. Import them from the barrel, `@/components/ui`; the icons are a se
 | File | What it holds |
 | --- | --- |
 | `Card.tsx` | `Card` — a heading, an optional subtitle, an `actions` slot and the content — `PanelGrid`, and `Panel` |
-| `Button.tsx` | `Button` and its variants, `IconButton`, `HintedIconButton` ([Icon-only header buttons](#icon-only-header-buttons)), and `FloatingAddButton` ([Adding an item](#adding-an-item)) |
+| `Button.tsx` | `Button` and its variants, `IconButton`, `HintedIconButton` ([Icon-only header buttons](#icon-only-header-buttons)), `FloatingAddButton` and `FloatingAddMenu` ([Adding an item](#adding-an-item)) |
 | `CopyButton.tsx` | The only way a secret reaches the clipboard: it clears the clipboard after 30 s ([`lib/app`](../../lib/app/README.md#plaintext-the-browser-would-otherwise-send-away)) |
 | `fields.tsx` | `Field`, `PinField`, `TextArea`, `SecretField`, `Select` — they share one input and label style |
 | `Badge.tsx`, `Notice.tsx`, `Empty.tsx`, `Spinner.tsx` | Status and empty-state surfaces |
 | `SizeStepper.tsx` | The grids' icon-size control ([The size control](#the-size-control)) |
 | `LayoutToggle.tsx` | Grid or list, on the drive and documents ([Grid or list](../tiles/README.md#grid-or-list)) |
-| `icons.tsx` | The stroke-icon set shared by navigation and primitives, plus `FileTypeIcon` and `FolderGlyph` |
+| `icons.tsx` | The stroke-icon set shared by navigation and primitives, plus `FileTypeIcon`, `FolderGlyph` and `UndoIcon` (flipped for redo), which both editors use |
 
 **Text entry goes through these fields, never a bare `<input>`.** `Field` and `TextArea` turn
 spellcheck, grammar extensions and translation off by default. **Every PIN entry is a `PinField`**,
@@ -132,3 +132,8 @@ the bottom-right corner, never a button in the toolbar. It comes in two placemen
 Both read `contentMeasure`, `CONTENT_GUTTER` and `FLOATING_SPREAD_GUTTER` from
 [`lib/app/shell.ts`](../../lib/app/README.md), which `AppShell` reads too — so the button cannot drift
 away from the layout it is aligned to. The button hides itself while a screen is in selection mode.
+
+**When a screen creates more than one kind of thing, it uses `FloatingAddMenu`** — the same button
+in the same place, which opens a small menu of options above itself instead of acting at once
+(Documents: a document or a spreadsheet). The `+` turns into a `×` while it is open; Escape or a
+click outside closes it, and the first option takes focus so the keyboard can choose.

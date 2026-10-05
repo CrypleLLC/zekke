@@ -129,6 +129,7 @@ export interface StorageBar {
   percent: number;
   reservedPercent: number;
   nearlyFull: boolean;
+  imagesSummary?: string;
 }
 
 export const NEARLY_FULL_AT = 0.9;
@@ -161,6 +162,10 @@ export function storageBar(usage: StorageUsage): StorageBar {
     nearlyFull:
       usage.quota_bytes > 0 &&
       usage.used_bytes / usage.quota_bytes >= NEARLY_FULL_AT,
+    imagesSummary:
+      usage.attachment_bytes === undefined || usage.attachment_bytes <= 0
+        ? undefined
+        : `including ${formatBytes(usage.attachment_bytes)} of images in documents`,
   };
 }
 

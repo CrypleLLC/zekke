@@ -92,6 +92,8 @@ export const SHARING_COPY = {
     "claims otherwise.",
   nothingToCopy:
     "There is nothing to copy yet: they have not saved this document since sharing it.",
+  imagesOverQuota:
+    "This document's images do not fit in your storage, so it was not copied. Images in documents count against your storage.",
   connectionGone:
     "The connection this came through is gone, so this can no longer be opened. Ask them to " +
     "invite you again — do not reuse the old one.",

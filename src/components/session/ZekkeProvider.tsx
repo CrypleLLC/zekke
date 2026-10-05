@@ -35,6 +35,7 @@ import {
   type SignUpDraft,
 } from '@/lib/account';
 import { AuthRejectedError } from '@/lib/auth';
+import { forgetRememberedImages } from '@/lib/documents/attachments';
 import { browserDeviceStore, discardAbandonedLocalStorage } from '@/lib/device/store';
 import type { Scope } from '@/lib/scopes';
 import { SessionKeystore } from '@/lib/session';
@@ -184,6 +185,7 @@ export function ZekkeProvider({ children }: { children: ReactNode }) {
   useEffect(
     () =>
       session.onLock(() => {
+        forgetRememberedImages();
         setAccount(undefined);
         setScopes([]);
         void settle();

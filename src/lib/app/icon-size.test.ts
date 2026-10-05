@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PreferenceStorage as VaultStorage } from "./icon-size";
 import {
+  DEFAULT_DOCUMENT_VIEW,
   DEFAULT_ITEM_LAYOUT,
   DOCUMENT_MINIATURE_TEXT_SHARE,
   ICON_SIZES,
@@ -17,8 +18,14 @@ import {
   miniatureTextPixels,
   pagePixels,
   readIconSize,
+  readDocumentView,
+  readOutlineShown,
+  readRulersShown,
   readItemLayout,
   smallerIconSize,
+  writeDocumentView,
+  writeOutlineShown,
+  writeRulersShown,
   writeIconSize,
   writeItemLayout,
   type IconGrid,
@@ -238,5 +245,82 @@ describe("remembering grid or list", () => {
     expect(readItemLayout("documents", storage)).toBe("grid");
     expect(readItemLayout("documents", undefined)).toBe("grid");
     expect(() => writeItemLayout("documents", "list", undefined)).not.toThrow();
+  });
+});
+
+describe("remembering the document view", () => {
+  it("opens in pages until continuous is chosen, and remembers the choice", () => {
+    const storage = memoryStorage();
+
+    expect(DEFAULT_DOCUMENT_VIEW).toBe("pages");
+    expect(readDocumentView(storage)).toBe("pages");
+    writeDocumentView("continuous", storage);
+    expect(readDocumentView(storage)).toBe("continuous");
+  });
+
+  it("does not share a key with the documents grid or list", () => {
+    const storage = memoryStorage();
+    writeDocumentView("continuous", storage);
+
+    expect(readItemLayout("documents", storage)).toBe(DEFAULT_ITEM_LAYOUT);
+  });
+
+  it("treats an unrecognised value, or no storage, as pages", () => {
+    const storage = memoryStorage();
+    storage.setItem("zekke_document_view", "scroll");
+
+    expect(readDocumentView(storage)).toBe("pages");
+    expect(readDocumentView(undefined)).toBe("pages");
+    expect(() => writeDocumentView("continuous", undefined)).not.toThrow();
+  });
+});
+
+describe("remembering whether the rulers are shown", () => {
+  it("shows them until they are hidden, and remembers either choice", () => {
+    const storage = memoryStorage();
+
+    expect(readRulersShown(storage)).toBe(true);
+    writeRulersShown(false, storage);
+    expect(readRulersShown(storage)).toBe(false);
+    writeRulersShown(true, storage);
+    expect(readRulersShown(storage)).toBe(true);
+    expect(storage.getItem("zekke_document_rulers")).toBeNull();
+  });
+
+  it("shows them for an unrecognised value or without storage", () => {
+    const storage = memoryStorage();
+    storage.setItem("zekke_document_rulers", "maybe");
+
+    expect(readRulersShown(storage)).toBe(true);
+    expect(readRulersShown(undefined)).toBe(true);
+    expect(() => writeRulersShown(false, undefined)).not.toThrow();
+  });
+});
+
+describe("remembering whether the outline panel is expanded", () => {
+  it("expands it until it is collapsed, and remembers either choice", () => {
+    const storage = memoryStorage();
+
+    expect(readOutlineShown(storage)).toBe(true);
+    writeOutlineShown(false, storage);
+    expect(readOutlineShown(storage)).toBe(false);
+    writeOutlineShown(true, storage);
+    expect(readOutlineShown(storage)).toBe(true);
+    expect(storage.getItem("zekke_document_outline")).toBeNull();
+  });
+
+  it("does not share a key with the rulers", () => {
+    const storage = memoryStorage();
+    writeOutlineShown(false, storage);
+
+    expect(readRulersShown(storage)).toBe(true);
+  });
+
+  it("expands it for an unrecognised value or without storage", () => {
+    const storage = memoryStorage();
+    storage.setItem("zekke_document_outline", "folded");
+
+    expect(readOutlineShown(storage)).toBe(true);
+    expect(readOutlineShown(undefined)).toBe(true);
   });
 });

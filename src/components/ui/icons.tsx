@@ -194,6 +194,25 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function UndoIcon({ flipped, className = '', ...props }: IconProps & { flipped?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={`${className} ${flipped ? '-scale-x-100' : ''}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M7 8H12.5a3.5 3.5 0 0 1 0 7H9" />
+      <path d="M9.5 5.5 6.5 8l3 2.5" />
+    </svg>
+  );
+}
+
 export function MinusIcon(props: IconProps) {
   return (
     <Icon {...props}>

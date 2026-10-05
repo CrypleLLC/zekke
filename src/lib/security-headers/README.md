@@ -90,6 +90,13 @@ Both were weighed on 2026-09-13 rather than left at their defaults.
 **HSTS is not set here.** Vercel sends it on its own domains, and `includeSubDomains` on the product
 domain would bind every sibling subdomain — a decision for the domain, not for this app.
 
+## The spreadsheet editor
+
+Univer needed nothing added to this policy: no worker, no WebAssembly, no `eval`, no remote font
+or image. A full editing session was run in Chromium under the production policy with no request
+leaving the page and no violation; what it would take for that to change is listed and pinned in
+[`components/spreadsheets`](../../components/spreadsheets/README.md#univer-under-the-zero-knowledge-rules).
+
 ## Changing the policy
 
 - **Never add `*`, `https:` or `http:` as a source.** A test fails if any directive does, because

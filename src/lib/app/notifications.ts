@@ -161,9 +161,10 @@ function copyFor(record: NotificationRecord): Pick<NotificationView, 'title' | '
         title: left === undefined ? 'Files will be deleted soon' : `Files will be deleted in ${days(left)}`,
         body:
           (over === undefined
-            ? 'Your Drive holds more than your plan allows.'
-            : `Your Drive holds ${formatBytes(over)} more than your plan allows.`) +
-          ' Renew, or download and delete files yourself, before the most recent uploads are deleted for good.',
+            ? 'Your files and the images in your documents take more than your plan allows.'
+            : `Your files and the images in your documents take ${formatBytes(over)} more than your plan allows.`) +
+          ' Renew, or download and delete files yourself, before the most recent uploads are deleted for good.' +
+          ' Images in documents are never deleted, but they count, so only files can make room.',
         tone: 'danger',
       };
     }

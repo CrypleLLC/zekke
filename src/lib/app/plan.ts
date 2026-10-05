@@ -162,9 +162,10 @@ export function graceView(plan: PlanRecord, usedBytes: number | undefined, now: 
     title: paid ? `Your Drive is larger than ${target} allows` : 'Your plan has ended',
     body:
       (over === undefined
-        ? `Your Drive holds more than ${target} allows.`
-        : `Your Drive holds ${formatBytes(over)} more than ${target} allows.`) +
+        ? `Your files and the images in your documents take more than ${target} allows.`
+        : `Your files and the images in your documents take ${formatBytes(over)} more than ${target} allows.`) +
       ` ${when[0].toUpperCase()}${when.slice(1)}, the most recent uploads are deleted until it fits. ` +
+      'Images in documents are never deleted, but they count. ' +
       'Renew, or download and delete files yourself before then.',
   };
 }
