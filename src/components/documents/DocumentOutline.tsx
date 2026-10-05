@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import { activeHeadingPos, outlineTree, type OutlineNode } from '@/lib/documents';
@@ -15,6 +15,8 @@ export default function DocumentOutline({ editor }: { editor: Editor | null }) {
     selector: () => editor?.state.selection.$from.pos ?? 0,
   });
   const active = activeHeadingPos(entries, cursor ?? 0);
+  const tree = useMemo(() => outlineTree(entries), [entries]);
+  const order = useMemo(() => readingOrder(tree), [tree]);
 
   return (
     <div className="zekke-no-print lg:sticky lg:top-[calc(var(--staging-banner-h)+var(--doc-chrome-h,8rem)+1.5rem)] lg:w-60 lg:shrink-0">
@@ -30,7 +32,7 @@ export default function DocumentOutline({ editor }: { editor: Editor | null }) {
 
       <nav
         aria-label="Document outline"
-        className={`${open ? 'block' : 'hidden'} max-h-[calc(100vh-var(--staging-banner-h)-var(--doc-chrome-h,8rem)-3rem)] overflow-y-auto rounded-xl border border-line bg-surface p-2 lg:block`}
+        className={`${open ? 'block' : 'hidden'} max-h-[calc(100vh-var(--staging-banner-h)-var(--doc-chrome-h,8rem)-3rem)] overflow-y-auto p-2 lg:block`}
       >
         {entries.length === 0 ? (
           <p className="px-2 py-3 text-caption normal-case tracking-normal text-ink-muted">
@@ -38,11 +40,12 @@ export default function DocumentOutline({ editor }: { editor: Editor | null }) {
           </p>
         ) : (
           <ul className="space-y-0.5">
-            {outlineTree(entries).map((node) => (
+            {tree.map((node) => (
               <OutlineRow
                 key={node.pos}
                 node={node}
                 depth={0}
+                order={order}
                 active={active}
                 onSelect={(pos) => editor !== null && goToHeading(editor, pos)}
               />
@@ -54,19 +57,34 @@ export default function DocumentOutline({ editor }: { editor: Editor | null }) {
   );
 }
 
+function readingOrder(tree: readonly OutlineNode[]): Map<number, number> {
+  const order = new Map<number, number>();
+  const visit = (nodes: readonly OutlineNode[]) => {
+    for (const node of nodes) {
+      order.set(node.pos, order.size);
+      visit(node.children);
+    }
+  };
+  visit(tree);
+  return order;
+}
+
 function OutlineRow({
   node,
   depth,
+  order,
   active,
   onSelect,
 }: {
   node: OutlineNode;
   depth: number;
+  order: ReadonlyMap<number, number>;
   active: number | undefined;
   onSelect: (pos: number) => void;
 }) {
   const current = node.pos === active;
   const named = node.text.trim().length > 0;
+  const stripe = (order.get(node.pos) ?? 0) % 2 === 0 ? 'bg-outline-row' : 'bg-outline-row-alt';
 
   return (
     <li>
@@ -75,8 +93,8 @@ function OutlineRow({
         aria-current={current ? 'location' : undefined}
         onClick={() => onSelect(node.pos)}
         style={{ paddingLeft: `${0.5 + depth * 0.75}rem` }}
-        className={`block w-full truncate rounded-md py-1 pr-2 text-left text-sm transition-colors ${
-          current ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-raised hover:text-ink'
+        className={`block w-full whitespace-normal break-words rounded-md py-1 pr-2 text-left text-sm transition-colors ${
+          current ? 'bg-brand-50 text-brand-700' : `${stripe} text-ink-soft hover:bg-line hover:text-ink`
         } ${named ? '' : 'italic text-ink-faint'}`}
       >
         {named ? node.text : UNTITLED_HEADING}
@@ -88,6 +106,7 @@ function OutlineRow({
               key={child.pos}
               node={child}
               depth={depth + 1}
+              order={order}
               active={active}
               onSelect={onSelect}
             />

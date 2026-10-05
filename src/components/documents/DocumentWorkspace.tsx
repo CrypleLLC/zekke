@@ -5,24 +5,34 @@ import type { CSSProperties } from 'react';
 import type { Doc as YDoc } from 'yjs';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { isSpreadsheet } from '@/lib/spreadsheets/layout';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
-import { META_MAP, readTitle, writeTitle, type SyncState } from '@/lib/documents';
+import {
+  META_MAP,
+  readDocumentFont,
+  type SyncState,
+} from '@/lib/documents';
+import { documentBaseFont } from '@/lib/document-styles';
 import {
   documentCountsLabel,
+  documentHref,
   PRIVATE_TEXT_ATTRIBUTES,
-  PRIVATE_TEXT_PROPS,
+  readDocumentView,
   saveStatusLabel,
   UNTITLED_DOCUMENT,
+  writeDocumentView,
+  type DocumentView,
 } from '@/lib/app';
 import { Notice, Spinner } from '@/components/ui';
 import { documentExtensions } from './extensions';
+import { DOCUMENT_FONT_VARIABLES } from './fonts';
 import { pageCountOf } from './pagination';
 import DocumentToolbar from './DocumentToolbar';
 import DocumentOutline from './DocumentOutline';
 import { useDocumentSync } from './useDocumentSync';
-
-const TITLE_ORIGIN = Symbol('Zekke/documents/title-input');
+import { SaveStatus, TitleInput } from './ItemHeader';
 
 export default function DocumentWorkspace({ id }: { id: string }) {
   const { sync, state, error } = useDocumentSync(id);
@@ -42,9 +52,10 @@ export default function DocumentWorkspace({ id }: { id: string }) {
     );
   }
 
-  if (sync === undefined) {
+  if (sync === undefined || isSpreadsheet(sync.doc)) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-ground">
+        {sync !== undefined && <MovedTo href={documentHref(id, 'spreadsheet')} />}
         <Spinner />
       </main>
     );
@@ -53,9 +64,21 @@ export default function DocumentWorkspace({ id }: { id: string }) {
   return <DocumentSurface doc={sync.doc} state={state} />;
 }
 
+function MovedTo({ href }: { href: string }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(href);
+  }, [router, href]);
+
+  return null;
+}
+
 function DocumentSurface({ doc, state }: { doc: YDoc; state: SyncState }) {
+  const [view, setView] = useDocumentView();
+  const [startsPaginated] = useState(view === 'pages');
   const editor = useEditor({
-    extensions: documentExtensions(doc),
+    extensions: documentExtensions(doc, { paginated: startsPaginated }),
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -66,9 +89,16 @@ function DocumentSurface({ doc, state }: { doc: YDoc; state: SyncState }) {
   });
   const chrome = useChromeHeight();
   const pages = usePageCount(editor);
+  const baseFont = useDocumentBaseFont(doc);
+
+  useEffect(() => {
+    if (editor !== null && !editor.isDestroyed) {
+      editor.commands.setPaginated(view === 'pages');
+    }
+  }, [editor, view]);
 
   return (
-    <main className="min-h-screen bg-ground">
+    <main className={`${DOCUMENT_FONT_VARIABLES} min-h-screen bg-ground`}>
       <header
         ref={chrome}
         className="zekke-no-print sticky top-[var(--staging-banner-h)] z-10 border-b border-line bg-surface/90 backdrop-blur"
@@ -78,15 +108,16 @@ function DocumentSurface({ doc, state }: { doc: YDoc; state: SyncState }) {
             <Image src="/zekke-logo.png" alt="Zekke" width={28} height={28} priority />
           </Link>
           <div className="min-w-0 flex-1">
-            <TitleInput doc={doc} />
+            <TitleInput doc={doc} label="Document title" placeholder={UNTITLED_DOCUMENT} />
             <SaveStatus
               label={saveStatusLabel(state.status, state.pending)}
               gapDetected={state.gapDetected}
+              gapMessage="Some updates are missing — this document will not be compacted"
             />
           </div>
           <DocumentCounts editor={editor} pages={pages} />
         </div>
-        <DocumentToolbar editor={editor} />
+        <DocumentToolbar editor={editor} baseFont={baseFont} view={view} onViewChange={setView} />
       </header>
 
       <div className="zekke-page-frame mx-auto flex max-w-[1180px] items-start gap-6 px-4 py-8">
@@ -94,14 +125,15 @@ function DocumentSurface({ doc, state }: { doc: YDoc; state: SyncState }) {
         <div className="min-w-0 flex-1 lg:flex lg:justify-center">
           <div
             className="zekke-page-stack"
-            style={{ '--page-count': pages } as CSSProperties}
+            data-view={view}
+            style={{ '--page-count': pages ?? 1 } as CSSProperties}
           >
             <div aria-hidden="true" className="zekke-page-sheets">
-              {Array.from({ length: pages }, (_, page) => (
+              {Array.from({ length: view === 'pages' ? (pages ?? 1) : 0 }, (_, page) => (
                 <div key={page} className="zekke-sheet" />
               ))}
             </div>
-            <div className="zekke-page">
+            <div className="zekke-page" style={{ fontFamily: baseFont }}>
               <EditorContent editor={editor} className="zekke-page-body" />
             </div>
           </div>
@@ -109,6 +141,32 @@ function DocumentSurface({ doc, state }: { doc: YDoc; state: SyncState }) {
       </div>
     </main>
   );
+}
+
+function useDocumentView(): [DocumentView, (view: DocumentView) => void] {
+  const [view, setView] = useState<DocumentView>(() => readDocumentView());
+
+  const choose = useCallback((next: DocumentView) => {
+    setView(next);
+    writeDocumentView(next);
+  }, []);
+
+  return [view, choose];
+}
+
+function useDocumentBaseFont(doc: YDoc): string {
+  const [font, setFont] = useState(() => documentBaseFont(readDocumentFont(doc)));
+
+  useEffect(() => {
+    const meta = doc.getMap(META_MAP);
+    const observer = () => setFont(documentBaseFont(readDocumentFont(doc)));
+
+    observer();
+    meta.observe(observer);
+    return () => meta.unobserve(observer);
+  }, [doc]);
+
+  return font;
 }
 
 function useChromeHeight() {
@@ -137,12 +195,12 @@ function useChromeHeight() {
   return ref;
 }
 
-function usePageCount(editor: Editor | null): number {
+function usePageCount(editor: Editor | null): number | undefined {
   return (
     useEditorState({
       editor,
       selector: () => pageCountOf(editor),
-    }) ?? 1
+    }) ?? undefined
   );
 }
 
@@ -185,7 +243,7 @@ function useDocumentCounts(editor: Editor | null): DocumentCountsValue | undefin
   return counts;
 }
 
-function DocumentCounts({ editor, pages }: { editor: Editor | null; pages: number }) {
+function DocumentCounts({ editor, pages }: { editor: Editor | null; pages: number | undefined }) {
   const counts = useDocumentCounts(editor);
 
   if (counts === undefined) {
@@ -195,56 +253,6 @@ function DocumentCounts({ editor, pages }: { editor: Editor | null; pages: numbe
   return (
     <p className="hidden shrink-0 text-caption normal-case tracking-normal text-ink-muted sm:block">
       {documentCountsLabel(counts.words, counts.characters, pages)}
-    </p>
-  );
-}
-
-function TitleInput({ doc }: { doc: YDoc }) {
-  const [title, setTitle] = useState(() => readTitle(doc));
-
-  useEffect(() => {
-    setTitle(readTitle(doc));
-
-    const meta = doc.getMap(META_MAP);
-    const observer = (_event: unknown, transaction: { origin: unknown }) => {
-      if (transaction.origin !== TITLE_ORIGIN) {
-        setTitle(readTitle(doc));
-      }
-    };
-
-    meta.observe(observer);
-    return () => meta.unobserve(observer);
-  }, [doc]);
-
-  const onChange = useCallback(
-    (next: string) => {
-      setTitle(next);
-      writeTitle(doc, next, TITLE_ORIGIN);
-    },
-    [doc],
-  );
-
-  return (
-    <input
-      aria-label="Document title"
-      {...PRIVATE_TEXT_PROPS}
-      value={title}
-      placeholder={UNTITLED_DOCUMENT}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full max-w-md truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-headline text-ink transition-colors placeholder:text-ink-faint hover:border-line-strong focus-visible:border-brand-500 focus-visible:outline-none"
-    />
-  );
-}
-
-function SaveStatus({ label, gapDetected }: { label: string; gapDetected: boolean }) {
-  return (
-    <p
-      aria-live="polite"
-      className={`px-1 text-caption normal-case tracking-normal ${
-        gapDetected ? 'text-warning' : 'text-ink-muted'
-      }`}
-    >
-      {gapDetected ? 'Some updates are missing — this document will not be compacted' : label}
     </p>
   );
 }

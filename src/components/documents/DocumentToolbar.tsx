@@ -4,15 +4,23 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
-import { PRIVATE_TEXT_PROPS } from '@/lib/app';
+import { PRIVATE_TEXT_PROPS, type DocumentView } from '@/lib/app';
+import { UndoIcon } from '@/components/ui/icons';
 import {
   DEFAULT_FONT_SIZE,
   DEFAULT_LINE_HEIGHT,
   FONT_FAMILIES,
+  FONT_GROUPS,
+  FONT_SIZE_MAX_PX,
+  FONT_SIZE_MIN_PX,
   FONT_SIZES,
   HIGHLIGHT_COLORS,
   LINE_HEIGHTS,
   TEXT_COLORS,
+  fontSizeFromInput,
+  fontSizePixels,
+  safeFontFamily,
+  stepFontSize,
 } from '@/lib/document-styles';
 
 const BLOCK_STYLES = [
@@ -44,7 +52,17 @@ const MARK_BUTTONS: Record<MarkName, { label: string; glyph: ReactNode }> = {
   code: { label: 'Inline code', glyph: <span className="font-mono text-xs leading-none">{'{}'}</span> },
 };
 
-export default function DocumentToolbar({ editor }: { editor: Editor | null }) {
+export default function DocumentToolbar({
+  editor,
+  baseFont,
+  view,
+  onViewChange,
+}: {
+  editor: Editor | null;
+  baseFont: string;
+  view: DocumentView;
+  onViewChange: (view: DocumentView) => void;
+}) {
   const state = useEditorState({
     editor,
     selector: () => {
@@ -97,14 +115,14 @@ export default function DocumentToolbar({ editor }: { editor: Editor | null }) {
         disabled={!state.canUndo}
         onClick={() => editor.chain().focus().undo().run()}
       >
-        <UndoGlyph />
+        <UndoIcon className="h-4 w-4" />
       </ToolButton>
       <ToolButton
         label="Redo"
         disabled={!state.canRedo}
         onClick={() => editor.chain().focus().redo().run()}
       >
-        <UndoGlyph flipped />
+        <UndoIcon flipped className="h-4 w-4" />
       </ToolButton>
 
       <Divider />
@@ -120,20 +138,15 @@ export default function DocumentToolbar({ editor }: { editor: Editor | null }) {
         width="w-32"
       />
 
-      <Select
-        label="Font"
-        value={state.fontFamily ?? FONT_FAMILIES[0].value}
+      <FontFamilySelect
+        value={safeFontFamily(state.fontFamily) ?? baseFont}
         onChange={(value) => editor.chain().focus().setFontFamily(value).run()}
-        options={FONT_FAMILIES}
-        width="w-24"
       />
 
-      <Select
-        label="Font size"
-        value={state.fontSize ?? DEFAULT_FONT_SIZE}
-        onChange={(value) => editor.chain().focus().setFontSize(value).run()}
-        options={FONT_SIZES.map((size) => ({ label: size.replace('px', ''), value: size }))}
-        width="w-16"
+      <FontSizeControl
+        size={state.fontSize ?? DEFAULT_FONT_SIZE}
+        onApply={(size) => editor.chain().focus().setFontSize(size).run()}
+        onCancel={() => editor.commands.focus()}
       />
 
       <Select
@@ -278,6 +291,23 @@ export default function DocumentToolbar({ editor }: { editor: Editor | null }) {
         onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
       >
         <ClearGlyph />
+      </ToolButton>
+
+      <Divider />
+
+      <ToolButton
+        label="Page view"
+        pressed={view === 'pages'}
+        onClick={() => onViewChange('pages')}
+      >
+        <PagesGlyph />
+      </ToolButton>
+      <ToolButton
+        label="Continuous view"
+        pressed={view === 'continuous'}
+        onClick={() => onViewChange('continuous')}
+      >
+        <ContinuousGlyph />
       </ToolButton>
 
       <Divider />
@@ -485,6 +515,172 @@ function Select({
   );
 }
 
+function FontFamilySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <select
+      aria-label="Font"
+      title="Font"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      style={{ fontFamily: value }}
+      className="h-8 w-36 rounded-md border border-transparent bg-transparent px-1 text-sm text-ink-soft transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50"
+    >
+      {FONT_GROUPS.map((group) => (
+        <optgroup key={group} label={group} style={{ fontFamily: 'var(--font-sans)' }}>
+          {FONT_FAMILIES.filter((font) => font.group === group).map((font) => (
+            <option key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+              {font.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
+function FontSizeControl({
+  size,
+  onApply,
+  onCancel,
+}: {
+  size: string;
+  onApply: (size: string) => void;
+  onCancel: () => void;
+}) {
+  const shown = String(fontSizePixels(size));
+  const [draft, setDraft] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    list.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!container.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
+
+  const apply = (next: string) => {
+    setDraft(null);
+    setOpen(false);
+    onApply(next);
+  };
+
+  const commitDraft = () => {
+    const next = draft === null ? undefined : fontSizeFromInput(draft);
+    if (next === undefined) {
+      setDraft(null);
+      return;
+    }
+    apply(next);
+  };
+
+  return (
+    <div className="relative flex items-center" ref={container}>
+      <input
+        aria-label="Font size"
+        title={`Font size (${FONT_SIZE_MIN_PX}–${FONT_SIZE_MAX_PX})`}
+        {...PRIVATE_TEXT_PROPS}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={draft ?? shown}
+        onFocus={(event) => event.target.select()}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => setDraft(null)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commitDraft();
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            setDraft(null);
+            setOpen(false);
+            onCancel();
+          }
+          if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            const from = (draft === null ? undefined : fontSizeFromInput(draft)) ?? size;
+            apply(stepFontSize(from, event.key === 'ArrowUp' ? 1 : -1));
+          }
+        }}
+        className="h-8 w-10 rounded-l-md border border-transparent bg-transparent px-1 text-center text-sm text-ink-soft transition-colors hover:bg-raised focus-visible:border-brand-500 focus-visible:text-ink focus-visible:outline-none"
+      />
+      <button
+        type="button"
+        aria-label="Font sizes"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Font sizes"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setOpen((previous) => !previous)}
+        className="flex h-8 w-5 items-center justify-center rounded-r-md text-ink-soft transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60"
+      >
+        <ChevronGlyph />
+      </button>
+
+      {open && (
+        <div
+          ref={list}
+          role="listbox"
+          aria-label="Font sizes"
+          className="absolute left-0 top-full z-30 mt-1 max-h-64 w-16 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-lift"
+        >
+          {FONT_SIZES.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={option === size}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => apply(option)}
+              className={`block w-full rounded-md px-2 py-1 text-left text-sm transition-colors ${
+                option === size ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-raised hover:text-ink'
+              }`}
+            >
+              {fontSizePixels(option)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChevronGlyph() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-3 w-3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m5.5 8 4.5 4.5L14.5 8" />
+    </svg>
+  );
+}
+
 function Swatches({
   label,
   colors,
@@ -518,24 +714,6 @@ function Swatches({
         ))}
       </div>
     </div>
-  );
-}
-
-function UndoGlyph({ flipped }: { flipped?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className={`h-4 w-4 ${flipped ? '-scale-x-100' : ''}`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M7 8H12.5a3.5 3.5 0 0 1 0 7H9" />
-      <path d="M9.5 5.5 6.5 8l3 2.5" />
-    </svg>
   );
 }
 
@@ -688,6 +866,39 @@ function PageBreakGlyph() {
       <path d="M6 7.5V3.5h8V7.5" />
       <path d="M6 12.5v4h8v-4" />
       <path d="M3 10h3M8.5 10h3M14 10h3" strokeDasharray="0.1 3.4" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function PagesGlyph() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect x="5" y="2.5" width="10" height="6.5" rx="1" />
+      <rect x="5" y="11" width="10" height="6.5" rx="1" />
+    </svg>
+  );
+}
+
+function ContinuousGlyph() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-4 w-4"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M4 4.5h12M4 8.2h12M4 11.8h12M4 15.5h8" />
     </svg>
   );
 }

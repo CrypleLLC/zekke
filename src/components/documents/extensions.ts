@@ -68,7 +68,7 @@ const GuardedHighlight = Highlight.extend({
   },
 });
 
-export function documentExtensions(doc: Y.Doc) {
+export function documentExtensions(doc: Y.Doc, options: { paginated?: boolean } = {}) {
   return [
     StarterKit.configure({
       undoRedo: false,
@@ -86,7 +86,7 @@ export function documentExtensions(doc: Y.Doc) {
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: { resizable: true } }),
     PageBreak,
-    Pagination,
+    Pagination.configure({ paginated: options.paginated ?? true }),
     CharacterCount,
     Selection,
     Placeholder.configure({ placeholder: BODY_PLACEHOLDER }),

@@ -7,13 +7,41 @@
 | `DocumentToolbar.tsx`   | The TipTap formatting toolbar                                              |
 | `DocumentOutline.tsx`   | The heading navigation panel beside the sheet                              |
 | `pageBreak.ts`          | The `pageBreak` node — the one page decision that is content               |
-| `pagination.ts`         | Measures the sheet and decorates where each page starts                    |
+| `pagination.ts`         | Measures the sheet and decorates where each page starts; off in continuous |
 | `useOutline.ts`         | Debounced heading reads off the editor, and `goToHeading`                  |
 | `useDocumentSync.ts`    | Binds `DocumentSync` to a component's lifetime                             |
+| `ItemHeader.tsx`        | The title field and the save status, shared with the spreadsheet editor    |
 | `extensions.ts`         | The TipTap extension set, bound to the document's `Y.Doc`                  |
 
 A document's tile is a [`PageTile`](../tiles/README.md); why it looks the way it does is under
 [Document and note tiles](../tiles/README.md#document-and-note-tiles).
+
+## Documents and spreadsheets in one list
+
+The Documents tab lists both, because a spreadsheet is an item of the same domain
+([ADR 00019](../../../../api-general/docs/adr/00019_spreadsheets_in_an_encrypted_crdt.md)). Which is
+which is read out of each item's own CRDT (`meta.kind`) while its summary is opened — the server
+cannot say. A spreadsheet's tile is its first sheet's top-left cells drawn as a small grid
+(`DocumentSummary.grid`), its row carries the sheet icon and the *Spreadsheet* type, and it opens at
+`/sheets/<id>` (`documentHref(id, kind)`). The `+` is a `FloatingAddMenu`: a document, a
+spreadsheet, or **a spreadsheet imported from a file** (`.xlsx`, `.csv`, `.tsv`). An import is read and
+converted in the tab ([`lib/spreadsheets`](../../lib/spreadsheets/README.md#files-in-and-out)); a file
+too large is refused before anything is created, and once created a notice names what the file
+held that did not come across. A new spreadsheet is created **with its first sheet already in its snapshot**
+(`createSpreadsheet`), so no two devices ever race to create it.
+
+Each editor refuses the other's items: `/docs/<id>` on a spreadsheet, or `/sheets/<id>` on a
+document, replaces itself with the right route, before any editor is bound to the `Y.Doc` — a
+TipTap editor bound to a spreadsheet would start writing a body into it.
+
+`useDocumentSync(id, setup)` takes the engine's options and what to write into an untouched item:
+the document editor's default seeds the base font, the spreadsheet editor's seeds a first sheet and
+runs with `SPREADSHEET_SYNC_OPTIONS`.
+
+**Sharing compacts first.** A share hands the recipient the item's current *snapshot*, so anything
+written since the last compaction would be missing from what they see and copy. `ShareItemDialog`
+runs `compactForAnchor` before sending a document or a spreadsheet; when nothing is past the
+snapshot, that costs one read.
 
 ## The list layout
 
@@ -197,6 +225,44 @@ the page simply ends where the user put it. It is the only pagination fact store
 and it is stored because it is the user's intent rather than a measurement. `Mod-Enter` inserts
 one.
 
+### Pages or continuous
+
+The toolbar's last pair of buttons switches between **page view** — the A4 sheets above — and
+**continuous view**, one column of text with no sheets. The choice is the viewer's, not the
+document's: it is remembered per browser by `readDocumentView` / `writeDocumentView`
+([`lib/app`](../../lib/app/README.md)), defaults to pages, and nothing about it is written to the
+document.
+
+**The DOM is the same in both.** `DocumentWorkspace` sets `data-view` on `.zekke-page-stack`, and
+CSS does the rest: in continuous view the sheets are hidden (and none are rendered), the stack is
+`--continuous-width` (48rem) wide, centred in the column beside the outline exactly as the sheet
+is, and `.zekke-page` loses its padding and its page-multiple height. Swapping the element instead
+would remount `EditorContent`, and with it the editor's view and selection.
+
+**Pagination is switched off, not hidden.** The plugin state carries `enabled`;
+`setPaginated(enabled)` flips it through `markPaginated`, a meta-only transaction kept out of the
+undo history. While it is off:
+
+- the state drops its spacers and its page starts, so no gap widget is rendered;
+- `PaginationView.measure` returns before reading anything, so typing costs no layout reads;
+- a measurement already queued when it was switched off is ignored by `apply`;
+- `pageCountOf` returns `undefined`, and the header's counts leave the pages out, because a page
+  count of a view with no pages would be a guess.
+
+Switching back invalidates the measurement cache and forces a full pass, since the column width —
+and with it every block height — has changed. The editor is created with the remembered mode
+(`documentExtensions(doc, { paginated })`) so a continuous view never paginates on its first
+frame, and an effect calls `setPaginated` on every change after that.
+
+**Page breaks stay in the document in both views.** In continuous view a `pageBreak` takes no
+space, as in page view — the spacing a break causes there is the gap widget that starts the next
+page, which no longer exists. Its label shrinks to the dashed rule alone, drawn inside the next
+block's top margin, so the break is still visible and selectable without pushing text apart.
+Printing is unchanged: a break is `break-after: page` whatever the view.
+
+The tests are in `pagination.test.ts` here, against a bare `EditorState`: the node test
+environment has no DOM, so they cover the state transitions and not the measuring view.
+
 ### The outline panel
 
 `readOutline` walks only top-level blocks — returning `false` from the `descendants` callback stops
@@ -209,6 +275,15 @@ document whose headings skip a level or never start at `h1`. Rows indent by **tr
 heading level**, or a document written entirely in `h2` renders permanently indented.
 `outlineTree` and `activeHeadingPos` are pure and live in
 [`lib/documents/outline.ts`](../../lib/documents/outline.ts) with tests; only the DOM scroll stays here.
+
+The panel has no card of its own: rows sit on the page's ground, **striped** in two shades just
+off it — `--color-outline-row` and `--color-outline-row-alt` in `globals.css` — so each heading
+reads as its own row without a border. The stripe alternates in **reading order across the whole
+tree** (`readingOrder` numbers every row, nested ones included), not per `<ul>`: an `nth-child`
+rule would restart in each nested list and put two rows of the same shade next to each other. A
+long heading **wraps** onto more lines rather than being truncated, because a section name cut to
+"…" is often indistinguishable from its neighbours. The active row keeps `brand-50` instead of
+its stripe; hover uses `line`, since the old `raised` hover is the ground colour and would vanish.
 
 The active row follows the **caret**, not the scroll position: the caret is what a writer tracks,
 and it is already state. An `IntersectionObserver` would need tearing down and re-attaching on
@@ -242,6 +317,29 @@ lists, so a pasted `style` or `data-color` can store only a value the toolbar co
 for colours, a plain colour. That module explains the injection it closes.
 
 `FONT_FAMILIES` names `var(--font-sans)` and `var(--font-mono)` — the properties this app actually
-defines in `globals.css`. They previously named `--font-geist-*`, which exist in the Next.js
-starter template and not here, so two of the three font options silently did nothing. Any export
-has to map these tokens to real family names explicitly.
+defines in `globals.css` — and one `var(--font-doc-*)` per Google font. They previously named
+`--font-geist-*`, which exist in the Next.js starter template and not here, so two of the three
+font options silently did nothing. Any export has to map these tokens to real family names
+explicitly.
+
+**The Google fonts are loaded by [`fonts.ts`](./fonts.ts)**, self-hosted through
+`next/font/google`. `DOCUMENT_FONT_VARIABLES` is the class list that defines every
+`--font-doc-*` property, and `DocumentWorkspace` puts it on its `<main>`, so the properties exist
+for the editor, the toolbar and print alike — and nowhere else in the app. Why they are
+self-hosted and lazily fetched is in
+[`lib/document-styles`](../../lib/document-styles/README.md#the-fonts).
+
+The font menu is a native `<select>` with one `<optgroup>` per `FONT_GROUPS` entry, each option
+drawn in its own font. The value shown is passed through `safeFontFamily` first, so a family
+stored with other quoting still selects its entry. Text with no font of its own shows the
+document's **base font** — Arial for a document created now, Inter for an older one.
+`DocumentWorkspace` reads it from `meta.font` with `useDocumentBaseFont`, which follows a change
+synced from another device, sets it as the `font-family` of the page, and hands it to the
+toolbar; `useDocumentSync` gives an untouched document its base font. Why this is per document
+is in [`lib/document-styles`](../../lib/document-styles/README.md#the-fonts).
+
+**The font size is a box, not a menu.** Typing a number and pressing Enter applies it, clamped to
+8–96; Escape or leaving the box discards the draft rather than applying it, because leaving it by
+clicking into the document moves the selection first and would size the wrong text. ArrowUp and
+ArrowDown apply the next preset, and the chevron opens the preset list (`FONT_SIZES`). The list
+buttons keep focus in the editor with `onMouseDown` `preventDefault`, like the toolbar buttons.
