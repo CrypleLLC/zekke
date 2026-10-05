@@ -104,6 +104,19 @@ describe('reading a range as a chart', () => {
   });
 });
 
+interface DrawnChart {
+  color: unknown;
+  xAxis: { type: string };
+  yAxis: { type: string };
+  title: { text: string };
+  legend: { show: boolean };
+  series: { data: unknown; areaStyle?: unknown }[];
+}
+
+function drawn(option: unknown): DrawnChart {
+  return option as DrawnChart;
+}
+
 describe('the chart drawn', () => {
   const grid = [
     ['Month', 'Rent', 'Food'],
@@ -111,7 +124,7 @@ describe('the chart drawn', () => {
     ['Feb', 1100, 380],
   ];
   const option = (kind: ChartSettings['kind'], title?: string) =>
-    chartOption({ kind, headers: true, series: 'columns', title }, grid) as Record<string, any>;
+    drawn(chartOption({ kind, headers: true, series: 'columns', title }, grid));
 
   it('draws columns with rounded data ends on a category axis, in the fixed palette', () => {
     const column = option('column', 'Spend');
@@ -138,12 +151,12 @@ describe('the chart drawn', () => {
   });
 
   it('shows no legend for a single series, whose title already names it', () => {
-    const single = chartOption({ kind: 'line', headers: true, series: 'columns' }, [['Month', 'Rent'], ['Jan', 1]]) as Record<string, any>;
+    const single = drawn(chartOption({ kind: 'line', headers: true, series: 'columns' }, [['Month', 'Rent'], ['Jan', 1]]));
     expect(single.legend.show).toBe(false);
   });
 
   it('plots the first series against the others for a scatter', () => {
-    const scatter = chartOption({ kind: 'scatter', headers: true, series: 'columns' }, [['x', 'y'], [1, 2], [3, 4]]) as Record<string, any>;
+    const scatter = drawn(chartOption({ kind: 'scatter', headers: true, series: 'columns' }, [['x', 'y'], [1, 2], [3, 4]]));
     expect(scatter.series[0].data).toEqual([[1, 2], [3, 4]]);
   });
 });
