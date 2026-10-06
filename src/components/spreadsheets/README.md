@@ -11,6 +11,7 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 
 | File         | Role                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------- |
+| `SpreadsheetsScreen.tsx` | The Spreadsheets tab: the documents screen on the spreadsheet shelf ([Two shelves, one domain](../documents/README.md#two-shelves-one-domain)) |
 | `SpreadsheetWorkspace.tsx` | The page: sync, the title and save status, the capacity notice, and the editor loaded on demand |
 | `SpreadsheetEditor.tsx` | Univer in a container, the binding, undo and redo, and a refused write's message |
 | `univer.ts`  | `startSpreadsheetUniver`: which plugins, which locales, the theme, the hidden menu items |
@@ -24,6 +25,11 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 | `mirror.ts`  | `WorkbookMirror`, the ids in the order Univer shows them, and the axis and sheet plans |
 | `surface.ts` | `UniverSurface`, the few Univer services the binding reads and writes through           |
 | `capacity.ts` | `CapacityGauge` and what each mutation would add, for the capacity guard              |
+| `chart-view.ts` | `ChartViewSource`: the active sheet's lines, scroll, zoom and freeze read off Univer's renderer, the selection, and a range's values |
+| `useSheetCharts.ts` | The active sheet's charts with their values, and the view, redrawn once per frame when either changes |
+| `ChartLayer.tsx` | The charts over the grid: drawing, selecting, moving, resizing, deleting, and the wheel passed to the grid |
+| `ChartCanvas.tsx` | One ECharts instance, with only the chart types and the canvas renderer it needs |
+| `ChartPanel.tsx` | The chart's settings beside the grid: title, type, series, headers, data range, delete |
 
 The binding's modules hold no React and are tested in Node against a real, headless Univer 1.0.3
 (`binding.test.ts`), with two devices editing offline and then exchanging updates.
@@ -42,7 +48,8 @@ number formats and their UI, formulas and their UI. **Not loaded**: the network 
 adds (an HTTP service nothing here needs), and every plugin whose edits the binding does not carry
 yet (filters, data validation, conditional formatting — 147.13).
 
-**Download** sits beside undo and redo: the whole workbook as `.xlsx`, or the sheet in view as
+**Insert chart** and **Download** sit beside undo and redo; charts are under [Charts](#charts).
+**Download** gives the whole workbook as `.xlsx`, or the sheet in view as
 CSV or TSV, built from Univer's snapshot so formulas carry their computed values, and saved
 through a `blob:` link — nothing leaves the tab but the file the person asked for.
 
@@ -126,6 +133,14 @@ const binding = new SpreadsheetBinding({ univer, unitId: identity.unitId, doc })
 edits: it reads the order of rows and columns from the document and assumes Univer shows the
 same. Dispose the binding before the Univer instance; disposing flushes anything still pending.
 
+**Univer is disposed one task after the editor unmounts.** Univer's UI is its own React root, and
+`univer.dispose()` unmounts it synchronously; called from an effect cleanup, that lands while React
+is still committing and React refuses it ("Attempted to synchronously unmount a root while React was
+already rendering"). `SpreadsheetEditor` therefore disposes the binding at once — that flush must not
+wait — hides the instance, and disposes Univer in a `setTimeout`. Each instance is mounted in a host
+element of its own inside the container, so a teardown still pending never touches the instance that
+replaced it (Strict Mode mounts every effect twice in development).
+
 ## The mirror
 
 Univer addresses everything by index; the `Y.Doc` by id. `WorkbookMirror` holds, per sheet, the
@@ -170,6 +185,42 @@ formatting**, protection and permissions, range themes. Each needs its mutations
 `rules` and reconciled back, with its custom formulas through the codec. A
 `defaultRowHeight` or `defaultColumnWidth` changed on another device is stored but not shown,
 because Univer has no mutation for it.
+
+## Charts
+
+Univer's open-source core has no charts, and its host for floating objects (`sheets-drawing-ui`)
+needs `UniverDrawingPlugin`, whose URL image service is one of the two network calls
+[pinned above](#univer-under-the-zero-knowledge-rules) as unreachable. So **a chart is not a Univer
+object**: it is a rule in the `Y.Doc` ([`lib/spreadsheets`](../../lib/spreadsheets/README.md#charts))
+drawn by ECharts in a layer of our own over Univer's canvas, and Univer never sees it.
+
+- **Placing it** is what Univer does for its own cell pop-ups: `ChartViewSource.read` takes the
+  skeleton's row and column layout, the main viewport's scroll, the scene's zoom and the sheet's
+  freeze, and turns a box in sheet pixels into one on the page. The layer is clipped below the
+  column header and right of the row header (and of a frozen pane), so a chart scrolls under them.
+  **A chart anchored inside a frozen pane is clipped with the rest** — a known gap.
+- **When it is redrawn**: `useSheetCharts` re-reads the charts when a transaction touched a sheet's
+  `rules` or its row or column order (`collectChanges`), and their values after every Univer
+  mutation, which covers typing, a paste, a formula's result and an edit from another device. A
+  scroll, a zoom, a resize or a sheet switch only moves them. All of it lands in one
+  `requestAnimationFrame`, and `ChartCanvas` skips `setOption` when the option did not change.
+- **Its values** are the cells' stored `v`, so a formula shows its computed result. At most
+  10 000 rows of a range are read.
+- **Editing**: click a chart to select it and open its panel; drag it to move it, drag its corner
+  to resize it. A selected chart takes the keyboard: Delete or Backspace removes it, Escape
+  deselects it, Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y) undo and redo. Clicking the grid deselects the
+  chart **but keeps its panel**, so cells can be selected and taken with *Use the selected cells*.
+  The wheel over a chart is re-dispatched to Univer's canvas, so the sheet still scrolls.
+- **Writing** goes through `binding.editSheet(sheetId, addedBytes, change)`: it flushes what is
+  pending, asks the capacity gauge (a chart is counted as 400 bytes), and writes in one
+  transaction with `CAPTURE_ORIGIN` between two `stopCapturing` calls. **Each chart change is its
+  own undo step**, undone by the same `Y.UndoManager` as a cell, from the buttons or from Univer's
+  shortcut. The remote path ignores `rules`, so an undone chart reaches the layer and nothing else.
+- **ECharts adds no request.** Only the bar, line, pie and scatter charts, the grid, title, legend
+  and tooltip components and the canvas renderer are registered (`echarts/core`). Its one
+  `new Function` is in the GeoJSON loader of the map chart, which is not imported, and it has no
+  network call.
+- **Not yet**: charts are not written to or read from `.xlsx`; an import still counts them as lost.
 
 ## The capacity guard
 

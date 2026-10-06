@@ -33,9 +33,10 @@ import {
   PasswordsFeatureIcon,
   SecretsFeatureIcon,
   SharingFeatureIcon,
+  SpreadsheetsFeatureIcon,
 } from '@/components/home/FeatureIcons';
 import {
-  DocumentsIcon,
+  DocumentFileIcon,
   DriveIcon,
   HomeIcon,
   LockSessionIcon,
@@ -47,6 +48,7 @@ import {
   VaultIcon,
   type IconProps,
   SharingIcon,
+  SpreadsheetFileIcon,
   TrashIcon,
 } from '@/components/ui/icons';
 import StorageMeter from './StorageMeter';
@@ -56,6 +58,10 @@ import { ShellNavigationProvider, type ShellDestination } from './ShellNavigatio
 import { Button, HintedIconButton, Notice, Spinner } from '@/components/ui';
 
 const DocumentsScreen = dynamic(() => import('@/components/documents/DocumentsScreen'), {
+  loading: () => <Spinner />,
+});
+
+const SpreadsheetsScreen = dynamic(() => import('@/components/spreadsheets/SpreadsheetsScreen'), {
   loading: () => <Spinner />,
 });
 
@@ -122,9 +128,19 @@ const NAV_ITEMS = [
     scope: 'documents',
     label: 'Documents',
     description: 'Long-form writing, encrypted here and synced across your devices.',
-    icon: DocumentsIcon,
+    icon: DocumentFileIcon,
     appIcon: DocumentsFeatureIcon,
     screen: DocumentsScreen,
+    miniatures: true,
+  },
+  {
+    id: 'spreadsheets',
+    scope: 'documents',
+    label: 'Spreadsheets',
+    description: 'Tables and figures, encrypted here and synced across your devices.',
+    icon: SpreadsheetFileIcon,
+    appIcon: SpreadsheetsFeatureIcon,
+    screen: SpreadsheetsScreen,
     miniatures: true,
   },
   {
@@ -149,7 +165,7 @@ const NAV_ITEMS = [
   {
     id: 'trash',
     label: 'Trash',
-    description: 'Deleted documents and Drive files, until they are deleted for good.',
+    description: 'Deleted documents, spreadsheets and Drive files, until they are deleted for good.',
     icon: TrashIcon,
     screen: TrashScreen,
   },

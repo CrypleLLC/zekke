@@ -11,9 +11,16 @@ import {
   SetRangeValuesCommand,
 } from '@univerjs/sheets';
 import {
+  DEFAULT_CHART_SETTINGS,
   FORMULA_CODEC,
+  insertLines,
+  readCharts,
   readNames,
+  readSheet,
+  removeRule,
   styleId,
+  writeChart,
+  type CapacityRefusal,
 } from '@/lib/spreadsheets';
 import { CAPTURE_ORIGIN } from './binding';
 import {
@@ -21,6 +28,7 @@ import {
   calculation,
   cellText,
   cellValue,
+  device,
   disposeDevices,
   expectConverged,
   pair,
@@ -388,5 +396,70 @@ describe('sheets, lines and names', () => {
       const name = new UniverSurface(device.univer, UNIT).definedName('total');
       expect(name?.formulaOrRefString).toBe('Sheet1!$B$3');
     }
+  });
+});
+
+describe('charts', () => {
+  const CHART = {
+    settings: DEFAULT_CHART_SETTINGS,
+    source: { startRow: 0, endRow: 3, startColumn: 0, endColumn: 1 },
+    anchor: {
+      from: { row: 0, column: 3, rowOffset: 0, columnOffset: 0 },
+      to: { row: 10, column: 5, rowOffset: 0, columnOffset: 0 },
+    },
+  };
+
+  function chartsOf(doc: Y.Doc, sheetId: string) {
+    return readCharts(readSheet(doc, sheetId)!);
+  }
+
+  it('writes a chart as its own undo step, kept out of Univer', async () => {
+    const [a, b] = pair();
+    await set(a, 0, 0, 'before');
+    expect(a.binding.editSheet(a.sheetId, 400, (sheet) => writeChart(sheet, 'c1', CHART))).toBe(true);
+    sync(a, b);
+    expect(chartsOf(b.doc, b.sheetId).map((chart) => chart.id)).toEqual(['c1']);
+    expect(a.binding.unbound.size).toBe(0);
+    expectConverged(a, b);
+
+    a.binding.undo();
+    sync(a, b);
+    expect(chartsOf(b.doc, b.sheetId)).toEqual([]);
+    expect(cellText(a, 0, 0)).toBe('before');
+
+    a.binding.redo();
+    sync(a, b);
+    expect(chartsOf(b.doc, b.sheetId).map((chart) => chart.id)).toEqual(['c1']);
+  });
+
+  it('follows its data when the other device inserts rows, and goes when it is removed', async () => {
+    const [a, b] = pair();
+    a.binding.editSheet(a.sheetId, 400, (sheet) => writeChart(sheet, 'c1', CHART));
+    sync(a, b);
+    insertLines(readSheet(b.doc, b.sheetId)!, 'rows', 0, 2, 'remote');
+    sync(a, b);
+    expect(chartsOf(a.doc, a.sheetId)[0].source).toMatchObject({ startRow: 2, endRow: 5 });
+    expect(chartsOf(a.doc, a.sheetId)[0].anchor.from.row).toBe(2);
+
+    b.binding.editSheet(b.sheetId, 0, (sheet) => removeRule(sheet, 'c1'));
+    sync(a, b);
+    expect(chartsOf(a.doc, a.sheetId)).toEqual([]);
+  });
+
+  it('is refused past the capacity, and nothing is written', () => {
+    const refusals: CapacityRefusal[] = [];
+    const [a] = pair();
+    const limited = device(a.doc, {
+      capacityLimitBytes: Y.encodeStateAsUpdate(a.doc).length + 10,
+      onCapacityRefused: (refusal) => refusals.push(refusal),
+    });
+    expect(limited.binding.editSheet(limited.sheetId, 400, (sheet) => writeChart(sheet, 'c1', CHART))).toBe(false);
+    expect(refusals).toHaveLength(1);
+    expect(chartsOf(a.doc, limited.sheetId)).toEqual([]);
+  });
+
+  it('refuses an edit to a sheet that no longer exists', () => {
+    const [a] = pair();
+    expect(a.binding.editSheet('missing', 0, () => undefined)).toBe(false);
   });
 });

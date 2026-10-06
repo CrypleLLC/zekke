@@ -31,7 +31,7 @@ import {
   type IconGrid,
 } from "./index";
 
-const GRIDS: readonly IconGrid[] = ["drive", "notes", "documents"];
+const GRIDS: readonly IconGrid[] = ["drive", "notes", "documents", "spreadsheets"];
 
 function memoryStorage(): VaultStorage {
   const held = new Map<string, string>();
@@ -229,6 +229,16 @@ describe("remembering grid or list", () => {
 
     expect(readItemLayout("drive", storage)).toBe("list");
     expect(readItemLayout("documents", storage)).toBe("grid");
+  });
+
+  it("keeps documents and spreadsheets apart", () => {
+    const storage = memoryStorage();
+    writeItemLayout("spreadsheets", "list", storage);
+    writeIconSize("spreadsheets", "tiny", storage);
+
+    expect(readItemLayout("documents", storage)).toBe("grid");
+    expect(readIconSize("documents", storage)).toBe(defaultIconSize("documents"));
+    expect(pagePixels("spreadsheets", "large")).toBe(pagePixels("documents", "large"));
   });
 
   it("does not share a key with the icon size", () => {

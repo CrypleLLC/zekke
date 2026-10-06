@@ -7,22 +7,48 @@ import '@univerjs/sheets-ui/lib/index.css';
 import '@univerjs/sheets-formula-ui/lib/index.css';
 import '@univerjs/sheets-numfmt-ui/lib/index.css';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { Doc as YDoc } from 'yjs';
-import { SPREADSHEET_FILE_LABELS, UNTITLED_SPREADSHEET, capacityRefusalMessage } from '@/lib/app';
+import {
+  CHART_LABELS,
+  CHART_NEEDS_RANGE,
+  SPREADSHEET_FILE_LABELS,
+  UNTITLED_SPREADSHEET,
+  capacityRefusalMessage,
+} from '@/lib/app';
 import { readTitle } from '@/lib/documents/content';
 import { exportDelimited, exportFileName, exportXlsx } from '@/lib/spreadsheets/interchange';
-import type { CapacityRefusal } from '@/lib/spreadsheets';
+import {
+  CHART_STORED_BYTES,
+  DEFAULT_CHART_SETTINGS,
+  anchorFromRect,
+  defaultChartAnchor,
+  isChartableRange,
+  newChartId,
+  removeRule,
+  writeChart,
+  type CapacityRefusal,
+  type ChartSettings,
+  type ContentRect,
+  type GridAnchor,
+  type GridRange,
+  type ResolvedChart,
+} from '@/lib/spreadsheets';
 import { Notice } from '@/components/ui';
-import { DownloadIcon } from '@/components/ui/icons';
-import { UndoIcon } from '@/components/ui/icons';
+import { ChartIcon, DownloadIcon, UndoIcon } from '@/components/ui/icons';
 import { SpreadsheetBinding } from './binding';
+import ChartLayer from './ChartLayer';
+import ChartPanel from './ChartPanel';
+import { ChartViewSource } from './chart-view';
+import { useSheetCharts } from './useSheetCharts';
 import { guardPrivateText } from './private-text';
 import { startSpreadsheetUniver } from './univer';
 
 export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: string }) {
   const container = useRef<HTMLDivElement>(null);
-  const [binding, setBinding] = useState<SpreadsheetBinding>();
+  const layer = useRef<HTMLDivElement>(null);
+  const [session, setSession] = useState<{ binding: SpreadsheetBinding; charts: ChartViewSource }>();
+  const binding = session?.binding;
   const [refusal, setRefusal] = useState<CapacityRefusal>();
   const [downloadError, setDownloadError] = useState<string>();
 
@@ -32,19 +58,103 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
       return;
     }
     const stopGuard = guardPrivateText(document.body);
-    const univer = startSpreadsheetUniver(element, doc, unitId);
+    const host = document.createElement('div');
+    host.className = 'absolute inset-0';
+    element.appendChild(host);
+    const univer = startSpreadsheetUniver(host, doc, unitId);
     const created = new SpreadsheetBinding({ univer, unitId, doc, onCapacityRefused: setRefusal });
-    setBinding(created);
+    setSession({ binding: created, charts: new ChartViewSource(univer, unitId) });
 
     return () => {
-      setBinding(undefined);
+      setSession(undefined);
       created.dispose();
-      univer.dispose();
       stopGuard();
+      host.style.display = 'none';
+      setTimeout(() => {
+        univer.dispose();
+        host.remove();
+      });
     };
   }, [doc, unitId]);
 
   const history = useHistory(binding);
+  const { view, charts } = useSheetCharts(session?.charts, doc, layer);
+  const [selectedChartId, setSelectedChartId] = useState<string>();
+  const [editedChartId, setEditedChartId] = useState<string>();
+  const [chartMessage, setChartMessage] = useState<string>();
+  const editedChart = charts.find(({ chart }) => chart.id === editedChartId)?.chart;
+
+  const selectChart = useCallback((id: string | undefined) => {
+    setSelectedChartId(id);
+    if (id !== undefined) {
+      setEditedChartId(id);
+    }
+  }, []);
+
+  const storeChart = useCallback(
+    (id: string | undefined, chart: { settings: ChartSettings; source: GridRange; anchor: GridAnchor }) => {
+      if (binding === undefined || view === undefined) {
+        return undefined;
+      }
+      let stored: string | undefined;
+      binding.editSheet(view.sheetId, CHART_STORED_BYTES, (sheet) => {
+        const chartId = id ?? newChartId(sheet);
+        if (writeChart(sheet, chartId, chart)) {
+          stored = chartId;
+        }
+      });
+      return stored;
+    },
+    [binding, view],
+  );
+
+  const insertChart = () => {
+    const range = session?.charts.selection();
+    if (view === undefined || range === undefined || !isChartableRange(range)) {
+      setChartMessage(CHART_NEEDS_RANGE);
+      return;
+    }
+    setChartMessage(undefined);
+    const id = storeChart(undefined, {
+      settings: DEFAULT_CHART_SETTINGS,
+      source: range,
+      anchor: defaultChartAnchor(view.rows, view.columns, range),
+    });
+    if (id !== undefined) {
+      selectChart(id);
+    }
+  };
+
+  const placeChart = (chart: ResolvedChart, rect: ContentRect) => {
+    if (view !== undefined) {
+      storeChart(chart.id, { ...chart, anchor: anchorFromRect(view.rows, view.columns, rect) });
+    }
+  };
+
+  const removeChart = (chart: ResolvedChart) => {
+    if (binding === undefined || view === undefined) {
+      return;
+    }
+    binding.editSheet(view.sheetId, 0, (sheet) => removeRule(sheet, chart.id));
+    setSelectedChartId(undefined);
+    setEditedChartId(undefined);
+  };
+
+  const chartToSelection = (chart: ResolvedChart) => {
+    const range = session?.charts.selection();
+    if (range === undefined || !isChartableRange(range)) {
+      setChartMessage(CHART_NEEDS_RANGE);
+      return;
+    }
+    setChartMessage(undefined);
+    storeChart(chart.id, { ...chart, source: range });
+  };
+
+  const deselectOutsideCharts = (event: PointerEvent<HTMLElement>) => {
+    if (!(event.target instanceof Element) || event.target.closest('[data-chart]') === null) {
+      setSelectedChartId(undefined);
+    }
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -56,12 +166,28 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
           <UndoIcon flipped className="h-4 w-4" />
         </HistoryButton>
         <span className="flex-1" />
+        <button
+          type="button"
+          disabled={binding === undefined}
+          onClick={insertChart}
+          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChartIcon className="h-4 w-4" />
+          {CHART_LABELS.insert}
+        </button>
         <DownloadMenu doc={doc} binding={binding} onError={setDownloadError} />
       </div>
       {downloadError !== undefined && (
         <div className="px-3 pb-2">
           <Notice tone="danger" onDismiss={() => setDownloadError(undefined)}>
             {downloadError}
+          </Notice>
+        </div>
+      )}
+      {chartMessage !== undefined && (
+        <div className="px-3 pb-2">
+          <Notice tone="info" onDismiss={() => setChartMessage(undefined)}>
+            {chartMessage}
           </Notice>
         </div>
       )}
@@ -72,7 +198,37 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
           </Notice>
         </div>
       )}
-      <div ref={container} translate="no" className="zekke-spreadsheet notranslate min-h-0 flex-1" />
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-w-0 flex-1" onPointerDownCapture={deselectOutsideCharts}>
+          <div ref={container} translate="no" className="zekke-spreadsheet notranslate absolute inset-0 z-0" />
+          <div ref={layer} translate="no" className="notranslate pointer-events-none absolute inset-0 z-[1]">
+            {session !== undefined && view !== undefined ? (
+              <ChartLayer
+                source={session.charts}
+                view={view}
+                charts={charts}
+                selectedId={selectedChartId}
+                onSelect={selectChart}
+                onPlace={placeChart}
+                onRemove={removeChart}
+                onUndo={(redo) => (redo ? binding?.redo() : binding?.undo())}
+              />
+            ) : null}
+          </div>
+        </div>
+        {editedChart !== undefined ? (
+          <ChartPanel
+            chart={editedChart}
+            onSettings={(settings) => storeChart(editedChart.id, { ...editedChart, settings })}
+            onUseSelection={() => chartToSelection(editedChart)}
+            onRemove={() => removeChart(editedChart)}
+            onClose={() => {
+              setEditedChartId(undefined);
+              setSelectedChartId(undefined);
+            }}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

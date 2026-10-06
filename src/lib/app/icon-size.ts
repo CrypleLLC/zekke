@@ -4,12 +4,13 @@ export interface PreferenceStorage {
   removeItem(key: string): void;
 }
 
-export type IconGrid = "drive" | "notes" | "documents";
+export type IconGrid = "drive" | "notes" | "documents" | "spreadsheets";
 
 const STORAGE_KEYS: Record<IconGrid, string> = {
   drive: "zekke_drive_icon_size",
   notes: "zekke_notes_icon_size",
   documents: "zekke_documents_icon_size",
+  spreadsheets: "zekke_spreadsheets_icon_size",
 };
 
 export const ICON_SIZES = ["tiny", "small", "medium", "large", "huge"] as const;
@@ -20,6 +21,7 @@ const DEFAULTS: Record<IconGrid, IconSize> = {
   drive: "medium",
   notes: "large",
   documents: "large",
+  spreadsheets: "large",
 };
 
 export interface IconScale {
@@ -109,9 +111,9 @@ export function isSmallestIconSize(size: IconSize): boolean {
 export type PageGrid = Exclude<IconGrid, "drive">;
 
 export function pagePixels(grid: PageGrid, size: IconSize): number {
-  return grid === "documents"
-    ? iconScale(size).glyphPixels
-    : iconScale(size).pagePixels;
+  return grid === "notes"
+    ? iconScale(size).pagePixels
+    : iconScale(size).glyphPixels;
 }
 
 export function gridTemplate(grid: IconGrid, size: IconSize): string {
@@ -180,6 +182,7 @@ export type LayoutScreen = Exclude<IconGrid, "notes">;
 const LAYOUT_STORAGE_KEYS: Record<LayoutScreen, string> = {
   drive: "zekke_drive_layout",
   documents: "zekke_documents_layout",
+  spreadsheets: "zekke_spreadsheets_layout",
 };
 
 export const DEFAULT_ITEM_LAYOUT: ItemLayout = "grid";

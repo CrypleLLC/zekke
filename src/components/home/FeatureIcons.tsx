@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type ReactNode } from 'react';
+import { DocumentFileIcon, SpreadsheetFileIcon } from '@/components/ui/icons';
 
 const WHITE = 'var(--color-surface)';
 
@@ -69,17 +70,11 @@ export function NotesFeatureIcon() {
 }
 
 export function DocumentsFeatureIcon() {
-  return (
-    <FeatureArt>
-      {(fill) => (
-        <>
-          <rect x="22" y="8" width="30" height="40" rx="4" fill={fill} />
-          <rect x="12" y="16" width="30" height="40" rx="4" fill={fill} stroke={WHITE} strokeWidth={3} />
-          <path d="M20 30h14M20 38h14M20 46h9" stroke={WHITE} strokeWidth={2.5} strokeLinecap="round" />
-        </>
-      )}
-    </FeatureArt>
-  );
+  return <DocumentFileIcon />;
+}
+
+export function SpreadsheetsFeatureIcon() {
+  return <SpreadsheetFileIcon />;
 }
 
 export function DriveFeatureIcon() {

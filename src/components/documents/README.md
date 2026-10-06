@@ -2,7 +2,7 @@
 
 | File                    | Role                                                                       |
 | ----------------------- | -------------------------------------------------------------------------- |
-| `DocumentsScreen.tsx`   | The documents grid of page miniatures — opens each document in its own tab |
+| `DocumentsScreen.tsx`   | The grid or list of one shelf — documents or spreadsheets — each opening in its own tab |
 | `DocumentWorkspace.tsx` | The `/docs/[id]` page: title, toolbar, A4 sheet, counts, save status       |
 | `DocumentToolbar.tsx`   | The TipTap formatting toolbar                                              |
 | `DocumentOutline.tsx`   | The heading navigation panel beside the sheet                              |
@@ -20,18 +20,37 @@ A document's tile is a [`PageTile`](../tiles/README.md); why it looks the way it
 [Document and note tiles](../tiles/README.md#document-and-note-tiles). What it draws is the
 document's [first page](#first-pages-on-the-documents-screen).
 
-## Documents and spreadsheets in one list
+## Two shelves, one domain
 
-The Documents tab lists both, because a spreadsheet is an item of the same domain
-([ADR 00019](../../../../api-general/docs/adr/00019_spreadsheets_in_an_encrypted_crdt.md)). Which is
-which is read out of each item's own CRDT (`meta.kind`) while its summary is opened — the server
-cannot say. A spreadsheet's tile is its first sheet's top-left cells drawn as a small grid
+Documents and Spreadsheets are **two tabs drawn by one screen**. `DocumentShelfScreen` takes a
+`DocumentShelf` from `DOCUMENT_SHELVES` (`lib/app/documents.ts`) — the kind it shows, its nouns, its
+empty states, its size control labels and the `IconGrid` under which its size and grid-or-list
+layout are remembered (`documents`, `spreadsheets`). `DocumentsScreen` is the `document` shelf;
+[`SpreadsheetsScreen`](../spreadsheets/README.md) is the `spreadsheet` one.
+
+On the server they are still **one domain**: a spreadsheet is an item of the documents scope
+([ADR 00019](../../../../api-general/docs/adr/00019_spreadsheets_in_an_encrypted_crdt.md)), listed
+by the same `GET /documents`, shared and trashed as a document. Which is which is read out of each
+item's own CRDT (`meta.kind`) while its summary is opened — the server cannot say — and
+`tilesOnShelf` keeps the ones of the shelf's kind. An item that cannot be decrypted has no readable
+kind and is shown on the Documents shelf.
+
+**The folder tree is shared.** Both tabs browse the one `documents` folder tree, so a folder made on
+one shelf is there on the other, and a folder's count and its delete confirmation speak of
+**items** (`DOCUMENT_FOLDER_NOUNS`): deleting a folder from either tab takes both kinds with it.
+Giving each shelf its own tree would need a new folder scope on the API.
+
+Each shelf draws its kind's `FileTypeIcon` — blue for a document, green for a spreadsheet — in the
+sidebar, on Home, in the folder path, in its empty state, in the list rows and in the `+` menu.
+
+A spreadsheet's tile is its first sheet's top-left cells drawn as a small grid
 (`DocumentSummary.grid`), its row carries the sheet icon and the *Spreadsheet* type, and it opens at
-`/sheets/<id>` (`documentHref(id, kind)`). The `+` is a `FloatingAddMenu`: a document, a
-spreadsheet, or **a spreadsheet imported from a file** (`.xlsx`, `.csv`, `.tsv`). An import is read and
-converted in the tab ([`lib/spreadsheets`](../../lib/spreadsheets/README.md#files-in-and-out)); a file
-too large is refused before anything is created, and once created a notice names what the file
-held that did not come across. A new spreadsheet is created **with its first sheet already in its snapshot**
+`/sheets/<id>` (`documentHref(id, kind)`). The Documents `+` makes a document; the Spreadsheets `+`
+is a menu of a new spreadsheet or **a spreadsheet imported from a file** (`.xlsx`, `.csv`, `.tsv`).
+An import is read and converted in the tab
+([`lib/spreadsheets`](../../lib/spreadsheets/README.md#files-in-and-out)); a file too large is
+refused before anything is created, and once created a notice names what the file held that did not
+come across. A new spreadsheet is created **with its first sheet already in its snapshot**
 (`createSpreadsheet`), so no two devices ever race to create it.
 
 Each editor refuses the other's items: `/docs/<id>` on a spreadsheet, or `/sheets/<id>` on a

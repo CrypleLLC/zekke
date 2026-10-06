@@ -19,6 +19,9 @@ import {
   UNTITLED_SPREADSHEET,
   capacityRefusalMessage,
   snapshotCapacityMessage,
+  DOCUMENT_SHELVES,
+  shelfEmptyLabel,
+  tilesOnShelf,
 } from './documents';
 import { SNAPSHOT_RAW_BYTES_LIMIT } from '@/lib/spreadsheets/capacity';
 
@@ -280,5 +283,26 @@ describe('capacity messages', () => {
     expect(snapshotCapacityMessage('ok')).toBeUndefined();
     expect(snapshotCapacityMessage('near')).toContain('close to');
     expect(snapshotCapacityMessage('over')).toContain('can no longer be compacted');
+  });
+});
+
+describe('document shelves', () => {
+  it('puts each kind on its own shelf', () => {
+    const tiles = [
+      { id: 'a', kind: 'document' as const },
+      { id: 'b', kind: 'spreadsheet' as const },
+    ];
+
+    expect(tilesOnShelf(tiles, 'document').map((tile) => tile.id)).toEqual(['a']);
+    expect(tilesOnShelf(tiles, 'spreadsheet').map((tile) => tile.id)).toEqual(['b']);
+  });
+
+  it('names the shelf in its counts, empty states and delete confirmation', () => {
+    const shelf = DOCUMENT_SHELVES.spreadsheet;
+
+    expect(documentCountLabel(2, shelf.nouns)).toBe('2 spreadsheets');
+    expect(shelfEmptyLabel(shelf, false)).toBe('No spreadsheets yet');
+    expect(shelfEmptyLabel(DOCUMENT_SHELVES.document, true)).toBe('No documents in this folder');
+    expect(documentDeleteConfirmation(1, 0, shelf.nouns)).toContain('this spreadsheet');
   });
 });

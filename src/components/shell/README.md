@@ -104,7 +104,7 @@ from the name they belong to, a two-column grid with a chasm down the middle. **
 the opposite problem**: capping it wastes rows and forces scrolling past space that was right
 there.
 
-So `NavItem.miniatures` decides. Notes, Documents, Shared and Drive set it and render at
+So `NavItem.miniatures` decides. Notes, Documents, Spreadsheets, Shared and Drive set it and render at
 `max-w-none`; Vault stays `max-w-6xl`. The desktop header's inner row uses the same value, so the
 page title always sits on the left edge of whatever is under it. The cap is on the content, never
 on the shell — the sidebar and sticky header span the window either way.
