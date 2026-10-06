@@ -29,7 +29,8 @@ Two things changed in the copy, and nothing else:
 
 Which icon belongs to which section is the `appIcon` field of the section's entry in `NAV_ITEMS`
 (`components/shell/AppShell.tsx`): Vault is the key, Passwords the card, Notes the page, Documents
-the two pages, Drive the cloud, Shared the padlock between two nodes. **A section with no `appIcon`
+the blue document file icon and Spreadsheets the green sheet one (the same `FileTypeIcon`s the drive,
+the lists and the `+` menu draw, so a kind looks the same everywhere), Drive the cloud, Shared the padlock between two nodes. **A section with no `appIcon`
 is not on Home** — Home itself has none.
 
 ## What it shows

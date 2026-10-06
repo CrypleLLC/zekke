@@ -136,6 +136,11 @@ export const DOCUMENT_NOUNS: FolderNouns = {
   one: "document",
   many: "documents",
 };
+export const SPREADSHEET_NOUNS: FolderNouns = {
+  one: "spreadsheet",
+  many: "spreadsheets",
+};
+export const DOCUMENT_FOLDER_NOUNS: FolderNouns = { one: "item", many: "items" };
 export const FILE_NOUNS: FolderNouns = { one: "file", many: "files" };
 
 export function folderNameProblem(

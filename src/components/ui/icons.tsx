@@ -175,6 +175,17 @@ export function DownloadIcon(props: IconProps) {
   );
 }
 
+export function ChartIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 4v16h16" />
+      <path d="M8 16v-4" />
+      <path d="M12 16V8" />
+      <path d="M16 16v-6" />
+    </Icon>
+  );
+}
+
 export function UploadIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -560,4 +571,12 @@ export function FileTypeIcon({
       )}
     </svg>
   );
+}
+
+export function DocumentFileIcon(props: IconProps) {
+  return <FileTypeIcon kind="document" {...props} />;
+}
+
+export function SpreadsheetFileIcon(props: IconProps) {
+  return <FileTypeIcon kind="sheet" {...props} />;
 }

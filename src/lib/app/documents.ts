@@ -2,6 +2,7 @@ import type { DocumentKind, DocumentSummary, SnapshotCapacity } from "@/lib/docu
 import type { FirstPage, SyncStatus } from "@/lib/documents";
 import { cellsInBytes, type CapacityRefusal } from "@/lib/spreadsheets/capacity";
 import { daysLabel } from "./trash";
+import { countOf, DOCUMENT_NOUNS, SPREADSHEET_NOUNS, type FolderNouns } from "./folders";
 
 export const UNTITLED_DOCUMENT = "Untitled document";
 export const UNTITLED_SPREADSHEET = "Untitled spreadsheet";
@@ -164,15 +165,16 @@ export function buildDocumentTiles(
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function documentCountLabel(count: number): string {
-  return count === 1 ? "1 document" : `${count} documents`;
+export function documentCountLabel(count: number, nouns: FolderNouns = DOCUMENT_NOUNS): string {
+  return countOf(count, nouns);
 }
 
 export function documentDeleteConfirmation(
   count: number,
   retentionDays = 0,
+  nouns: FolderNouns = DOCUMENT_NOUNS,
 ): string {
-  const documents = count === 1 ? "this document" : `these ${count} documents`;
+  const documents = count === 1 ? `this ${nouns.one}` : `these ${count} ${nouns.many}`;
   const them = count === 1 ? "it" : "them";
   if (retentionDays > 0) {
     return `${capitalise(documents)} ${count === 1 ? "goes" : "go"} to the Trash, where you can restore ${them} for ${daysLabel(retentionDays)}. After that ${count === 1 ? "it is" : "they are"} deleted for good.`;
@@ -186,6 +188,53 @@ function capitalise(text: string): string {
 
 export function documentHref(id: string, kind: DocumentKind = "document"): string {
   return kind === "spreadsheet" ? `/sheets/${id}` : `/docs/${id}`;
+}
+
+export type DocumentShelfGrid = "documents" | "spreadsheets";
+
+export interface DocumentShelf {
+  kind: DocumentKind;
+  grid: DocumentShelfGrid;
+  rootLabel: string;
+  nouns: FolderNouns;
+  emptyRoot: string;
+  emptyFolder: string;
+  sizeGroupLabel: string;
+  smallerLabel: string;
+  largerLabel: string;
+}
+
+export const DOCUMENT_SHELVES: Record<DocumentKind, DocumentShelf> = {
+  document: {
+    kind: "document",
+    grid: "documents",
+    rootLabel: "Documents",
+    nouns: DOCUMENT_NOUNS,
+    emptyRoot: "Long-form writing, encrypted on this device before it is stored. Each document opens in its own tab.",
+    emptyFolder: "This folder holds no documents. Drag documents onto it, or create one while it is open.",
+    sizeGroupLabel: "Document size",
+    smallerLabel: "Smaller documents",
+    largerLabel: "Larger documents",
+  },
+  spreadsheet: {
+    kind: "spreadsheet",
+    grid: "spreadsheets",
+    rootLabel: "Spreadsheets",
+    nouns: SPREADSHEET_NOUNS,
+    emptyRoot: "Tables and figures, encrypted on this device before they are stored. Each spreadsheet opens in its own tab.",
+    emptyFolder: "This folder holds no spreadsheets. Drag spreadsheets onto it, or create one while it is open.",
+    sizeGroupLabel: "Spreadsheet size",
+    smallerLabel: "Smaller spreadsheets",
+    largerLabel: "Larger spreadsheets",
+  },
+};
+
+export function shelfEmptyLabel(shelf: DocumentShelf, inFolder: boolean): string {
+  return inFolder ? `No ${shelf.nouns.many} in this folder` : `No ${shelf.nouns.many} yet`;
+}
+
+export function tilesOnShelf<T extends { kind: DocumentKind }>(tiles: readonly T[], kind: DocumentKind): T[] {
+  return tiles.filter((tile) => tile.kind === kind);
 }
 
 export const NEW_ITEM_LABELS = {

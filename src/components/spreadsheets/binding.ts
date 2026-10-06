@@ -22,6 +22,7 @@ import {
   type Dimension,
   type FormulaCodec,
   type Operation,
+  type SheetMap,
 } from '@/lib/spreadsheets';
 import { CapacityGauge, mutationGrowth } from './capacity';
 import { applyChanges, reconcileNames, type ApplyContext } from './apply';
@@ -110,6 +111,26 @@ export class SpreadsheetBinding {
   redo(): void {
     this.flush();
     this.undoManager.redo();
+  }
+
+  editSheet(sheetId: string, addedBytes: number, change: (sheet: SheetMap) => void): boolean {
+    if (this.disposed) {
+      return false;
+    }
+    const sheet = readSheet(this.options.doc, sheetId);
+    if (sheet === undefined) {
+      return false;
+    }
+    this.flush();
+    const refusal = this.capacity.refusal(addedBytes, 0);
+    if (refusal !== undefined) {
+      this.options.onCapacityRefused?.(refusal);
+      return false;
+    }
+    this.undoManager.stopCapturing();
+    this.options.doc.transact(() => change(sheet), CAPTURE_ORIGIN);
+    this.undoManager.stopCapturing();
+    return true;
   }
 
   workbookSnapshot(): IWorkbookData {

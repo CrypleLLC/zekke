@@ -17,3 +17,4 @@ export * from './csv';
 export * from './xlsx';
 export * from './interchange';
 export * from './charts';
+export * from './chart-geometry';

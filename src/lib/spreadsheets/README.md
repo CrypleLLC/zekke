@@ -32,6 +32,8 @@ says **what** the layout is and how to use it.
 | `xlsx.ts`     | Reading and writing `.xlsx` through ExcelJS, and the report of what was left behind   |
 | `csv.ts`      | Parsing and writing CSV and TSV                                                      |
 | `interchange.ts` | `importSpreadsheet` and the exports: format, capacity, title and names in one place |
+| `charts.ts`   | A chart as a `chart` rule: its settings, its data range and its box, stored by ids; the ECharts option |
+| `chart-geometry.ts` | A chart's box on the grid: lines and offsets ↔ pixels, the default placement, moves and resizes |
 
 ## The `Y.Doc`
 
@@ -142,6 +144,35 @@ back, or returns `undefined` when every line in it is gone.
 - **Rules** carry a `feature` name and an opaque `body`. Which features exist, and what their
   bodies hold, is the binding's business: this module only keeps their ranges anchored. A rule
   whose ranges are all gone is not returned.
+
+## Charts
+
+A chart is a **rule** of feature `chart` in its sheet's `rules` map: its one range is the data, and
+its body is `{ settings, anchor }`. Nothing about a chart is in Univer, which has no chart in its
+open-source core; the editor draws it ([`components/spreadsheets`](../../components/spreadsheets/README.md#charts)).
+
+- **The data range** is an `IdRange`, so it grows with a row inserted inside it on any device and
+  is gone with the rows it covered. A chart whose data is gone is not returned by `readCharts`.
+- **The box** (`StoredAnchor`) is two corners, each a row id and a column id plus an offset in pixels
+  inside that cell, at zoom 1. It moves with the lines above and left of it and stretches with
+  lines inserted under it. A corner whose line was removed falls back to the nearest end, and the
+  box never turns inside out. An offset larger than the cell now is clamped when drawn.
+- **`settings`** are cleaned on every read (`normaliseSettings`): an unknown kind is a column chart,
+  a title is at most 200 characters, and an empty one is no title.
+- **`chartTable` reads the grid the way a person laid it out**: the first row (or column) names the
+  series when `headers` is on, a first column of text holds the categories, and the series stop at
+  the palette's eight so a colour never repeats. `chartOption` turns that into an ECharts option
+  with the app's palette and **its tooltip drawn on the canvas** (`renderMode: 'richText'`), so a
+  cell's text is never written into the page as HTML.
+- **`writeChart` returns `false` and writes nothing** when a corner or the range lies outside the
+  sheet, so a caller never selects a chart that was not stored.
+
+`chart-geometry.ts` is the pixel side, kept free of Univer so it can be tested. A `LineLayout` is a
+dimension as Univer's skeleton lays it out — where the first line starts (after the header) and
+where each line ends — and `lineAt` finds the line under a coordinate by binary search, skipping
+hidden lines, whose size is zero. `anchorRect` and `anchorFromRect` turn a box into pixels and
+back; a box is never stored smaller than `MIN_CHART_SIZE`. `defaultChartAnchor` places a new chart
+one column right of its data, level with its first row, at 480 × 300.
 
 ## The converter
 
