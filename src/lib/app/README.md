@@ -386,6 +386,10 @@ carries its `kind` and, for a readable spreadsheet, the `grid` its miniature dra
   series orientation, `CHART_NEEDS_RANGE` when there is nothing to chart, `chartHeadersLabel`, which
   says first row or first column to match the orientation, and `chartAccessibleName` for the chart
   on the grid.
+- `spreadsheet-print.ts` is the print preview's copy: `PRINT_LABELS`, a name for each paper,
+  orientation, scale, margin preset and page order, the labels of repeated rows and columns and of a
+  break, and `pageCountLabel`, which gives the scale when it is not 100 % and says when the page
+  limit cut the print short.
 - `DOCUMENT_SHELVES` is what tells the Documents and Spreadsheets tabs apart — the kind each shows,
   its nouns, its empty states and the `IconGrid` its size and layout are remembered under
   ([Two shelves, one domain](../../components/documents/README.md#two-shelves-one-domain)).

@@ -20,6 +20,7 @@ export const SHEET_DEFAULT_STYLE = 'defaultStyle';
 export const SHEET_RIGHT_TO_LEFT = 'rightToLeft';
 export const SHEET_DEFAULT_ROW_HEIGHT = 'defaultRowHeight';
 export const SHEET_DEFAULT_COLUMN_WIDTH = 'defaultColumnWidth';
+export const SHEET_PAGE_SETUP = 'pageSetup';
 export const SHEET_ROW_ORDER = 'rowOrder';
 export const SHEET_COLUMN_ORDER = 'columnOrder';
 export const SHEET_REMOVED_ROWS = 'removedRows';

@@ -34,6 +34,9 @@ says **what** the layout is and how to use it.
 | `interchange.ts` | `importSpreadsheet` and the exports: format, capacity, title and names in one place |
 | `charts.ts`   | A chart as a `chart` rule: its settings, its data range and its box, stored by ids; the ECharts option |
 | `chart-geometry.ts` | A chart's box on the grid: lines and offsets ↔ pixels, the default placement, moves and resizes |
+| `print.ts`    | A sheet's page setup, print area, repeated rows and columns and page breaks, stored by ids |
+| `print-layout.ts` | Pagination: `PrintGrid`, `layoutPrint`, a page's regions, and where each cell, gridline and chart lands |
+| `print-style.ts` | `cellLook`: Univer's cell style read into what a printed cell needs, every value checked |
 
 ## The `Y.Doc`
 
@@ -46,7 +49,7 @@ names           Y.Map    name id → { name, formula, sheetId?, comment?, hidden
 
 sheet map
   name, hidden, tabColor, freeze, gridlines, gridlinesColor, rightToLeft, defaultStyle,
-  defaultRowHeight, defaultColumnWidth
+  defaultRowHeight, defaultColumnWidth, pageSetup
   rowOrder        Y.Array  every row id ever created, in order
   columnOrder     Y.Array  every column id ever created, in order
   removedRows     Y.Map    row id → true
@@ -173,6 +176,70 @@ where each line ends — and `lineAt` finds the line under a coordinate by binar
 hidden lines, whose size is zero. `anchorRect` and `anchorFromRect` turn a box into pixels and
 back; a box is never stored smaller than `MIN_CHART_SIZE`. `defaultChartAnchor` places a new chart
 one column right of its data, level with its first row, at 480 × 300.
+
+## Printing
+
+What a sheet prints is stored in the sheet, so every device prints it the same way; how it is drawn
+is [`components/spreadsheets`](../../components/spreadsheets/README.md#printing).
+
+| Setting | Stored as |
+| --- | --- |
+| Paper, orientation, scale, margins, gridlines, page order | `pageSetup`, one sheet property, last writer wins |
+| Print area | the rule `print:area`, feature `print-area`, one `IdRange` |
+| Rows repeated on every page | the rule `print:rows`, feature `print-titles`, a whole-row range |
+| Columns repeated on every page | the rule `print:columns`, feature `print-titles`, a whole-column range |
+| A page break | a rule of feature `page-break` with a random id: a one-row range breaks before that row, a one-column range before that column |
+
+- **The print area and the titles have fixed rule ids** (`:` is outside the id alphabet, so no
+  random id can collide), so two devices setting one at once leave one, not two.
+- **Everything is anchored on ids.** A print area grows with a row inserted inside it on another
+  device; repeated rows follow an insertion above them; a break moves with its row and disappears
+  with it. The same break added on two devices reads as one.
+- **`readPageSetup` never fails**: an unknown or missing field is its default — the locale's paper
+  (`defaultPaperFor`), portrait, actual size, normal margins, gridlines on, down then over. Nothing is
+  written until the person changes something.
+- **Margins are presets** (normal 2 × 1.8 cm, narrow 1.27 × 0.64 cm, wide 2.54 cm), so a stored value
+  can never leave no room on either paper.
+
+### Pagination
+
+`layoutPrint(grid, area, settings, setup)` takes the line sizes in pixels at zoom 1 (`PrintGrid`, a
+hidden line at 0) and returns the pages, each a row span and a column span, plus the titles it
+repeats. It is the whole of the page logic, tested without a DOM.
+
+- **The printable box** is the paper less the margins, at CSS's 96 px per inch, so a column of 100 px
+  prints 26.5 mm wide, as on screen.
+- **Scale**: *actual size* is 100 %; *fit to the page width* scales the area's columns (and repeated
+  columns) onto one page wide; *fit on one page* scales both ways. A fit only shrinks, never below
+  10 %, as in Excel.
+- **Breaks**: a page ends where the next line would overflow it, or at a stored break. A fit to the
+  width ignores column breaks; a fit on one page ignores all of them.
+- **Repeated rows print on a page whose first row comes after them**, so the page that already
+  shows them does not show them twice, and they take their height off every page they print on.
+  Columns likewise.
+- **A line taller than a page** gets a page of its own and is clipped; hidden lines are skipped.
+- **Order**: down, then over (Excel's default), or over, then down.
+- **At most `MAX_PRINT_PAGES` (250)**; `totalPages` says how many there would have been.
+- With no print area, the area is **from A1 to the last cell with content**, a fill or a border,
+  including merges and charts (`contentArea`).
+
+A page is up to four **regions** (`pageRegions`): the corner of repeated rows and columns, the
+repeated rows, the repeated columns and the body, each with its own origin. `regionCells` places
+cells in a region: a merge once, from its first cell, as a box that may reach outside the region and
+is clipped by it; text that is not wrapped and not a number **runs into empty neighbours** — right
+for left-aligned, left for right-aligned, both ways evenly for centred — the way the grid draws it.
+`regionGridlines`, `regionMerges` and `regionCharts` give the rest.
+
+### Cell styles
+
+`cellLook(style, kind)` reads Univer's composed style — font, size in points, bold, italic,
+underline, strike, colour, fill, borders by side, alignment, wrapping, padding — with the grid's
+defaults (Arial 11, numbers right, booleans centred, text left, bottom-aligned). **Every value that
+reaches a stylesheet is checked**: colours through `safeColor` from
+[`lib/document-styles`](../document-styles/README.md#what-this-defends-against), font names against a
+plain-name pattern and quoted, sizes and paddings clamped. A colour such as `url(…)` stored by
+another device can therefore never make the print fetch anything. Rotated and vertical text print
+unrotated; rich text prints as plain text in the cell's style.
 
 ## The converter
 

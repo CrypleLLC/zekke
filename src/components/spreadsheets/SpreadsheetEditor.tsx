@@ -12,6 +12,7 @@ import type { Doc as YDoc } from 'yjs';
 import {
   CHART_LABELS,
   CHART_NEEDS_RANGE,
+  PRINT_LABELS,
   SPREADSHEET_FILE_LABELS,
   UNTITLED_SPREADSHEET,
   capacityRefusalMessage,
@@ -35,19 +36,25 @@ import {
   type ResolvedChart,
 } from '@/lib/spreadsheets';
 import { Notice } from '@/components/ui';
-import { ChartIcon, DownloadIcon, UndoIcon } from '@/components/ui/icons';
+import { ChartIcon, DownloadIcon, PrintIcon, UndoIcon } from '@/components/ui/icons';
 import { SpreadsheetBinding } from './binding';
 import ChartLayer from './ChartLayer';
 import ChartPanel from './ChartPanel';
 import { ChartViewSource } from './chart-view';
 import { useSheetCharts } from './useSheetCharts';
+import { SheetPrintReader } from './print-source';
+import SheetPrint from './SheetPrint';
 import { guardPrivateText } from './private-text';
 import { startSpreadsheetUniver } from './univer';
 
 export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: string }) {
   const container = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
-  const [session, setSession] = useState<{ binding: SpreadsheetBinding; charts: ChartViewSource }>();
+  const [session, setSession] = useState<{
+    binding: SpreadsheetBinding;
+    charts: ChartViewSource;
+    print: SheetPrintReader;
+  }>();
   const binding = session?.binding;
   const [refusal, setRefusal] = useState<CapacityRefusal>();
   const [downloadError, setDownloadError] = useState<string>();
@@ -63,7 +70,11 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
     element.appendChild(host);
     const univer = startSpreadsheetUniver(host, doc, unitId);
     const created = new SpreadsheetBinding({ univer, unitId, doc, onCapacityRefused: setRefusal });
-    setSession({ binding: created, charts: new ChartViewSource(univer, unitId) });
+    setSession({
+      binding: created,
+      charts: new ChartViewSource(univer, unitId),
+      print: new SheetPrintReader(univer, unitId),
+    });
 
     return () => {
       setSession(undefined);
@@ -83,6 +94,31 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
   const [editedChartId, setEditedChartId] = useState<string>();
   const [chartMessage, setChartMessage] = useState<string>();
   const editedChart = charts.find(({ chart }) => chart.id === editedChartId)?.chart;
+  const [printing, setPrinting] = useState<{ sheetId: string; selection: GridRange | undefined }>();
+
+  const openPrint = useCallback(() => {
+    const sheetId = session?.charts.activeSheetId();
+    if (sheetId !== undefined) {
+      setSelectedChartId(undefined);
+      setPrinting({ sheetId, selection: session?.charts.selection() });
+    }
+  }, [session]);
+  const closePrint = useCallback(() => setPrinting(undefined), []);
+
+  useEffect(() => {
+    if (printing !== undefined) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        event.stopPropagation();
+        openPrint();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [printing, openPrint]);
 
   const selectChart = useCallback((id: string | undefined) => {
     setSelectedChartId(id);
@@ -175,8 +211,28 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
           <ChartIcon className="h-4 w-4" />
           {CHART_LABELS.insert}
         </button>
+        <button
+          type="button"
+          title={PRINT_LABELS.openHint}
+          disabled={binding === undefined}
+          onClick={openPrint}
+          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <PrintIcon className="h-4 w-4" />
+          {PRINT_LABELS.open}
+        </button>
         <DownloadMenu doc={doc} binding={binding} onError={setDownloadError} />
       </div>
+      {printing !== undefined && session !== undefined ? (
+        <SheetPrint
+          doc={doc}
+          sheetId={printing.sheetId}
+          reader={session.print}
+          binding={session.binding}
+          selection={printing.selection}
+          onClose={closePrint}
+        />
+      ) : null}
       {downloadError !== undefined && (
         <div className="px-3 pb-2">
           <Notice tone="danger" onDismiss={() => setDownloadError(undefined)}>

@@ -186,6 +186,16 @@ export function ChartIcon(props: IconProps) {
   );
 }
 
+export function PrintIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 9V4h10v5" />
+      <path d="M7 17H5.5A1.5 1.5 0 0 1 4 15.5v-5A1.5 1.5 0 0 1 5.5 9h13a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H17" />
+      <path d="M7 14h10v6H7z" />
+    </Icon>
+  );
+}
+
 export function UploadIcon(props: IconProps) {
   return (
     <Icon {...props}>

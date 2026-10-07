@@ -18,3 +18,6 @@ export * from './xlsx';
 export * from './interchange';
 export * from './charts';
 export * from './chart-geometry';
+export * from './print';
+export * from './print-layout';
+export * from './print-style';

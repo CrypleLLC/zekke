@@ -121,3 +121,28 @@ export function printPageRule(margins: PageMargins): string {
   const box = MARGIN_SIDES.map((side) => `${margins[side]}mm`).join(' ');
   return `@page { size: A4; margin: ${box}; }`;
 }
+
+export type PaperSize = 'a4' | 'letter';
+export type PageOrientation = 'portrait' | 'landscape';
+
+export const PAPER_SIZES: Record<PaperSize, { width: number; height: number; css: string }> = {
+  a4: { width: PAGE_WIDTH_MM, height: PAGE_HEIGHT_MM, css: 'A4' },
+  letter: { width: 215.9, height: 279.4, css: 'letter' },
+};
+
+const LETTER_REGIONS = new Set(['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'GT', 'CR', 'PA', 'DO', 'PR', 'SV']);
+
+export function defaultPaperFor(locale: string | undefined): PaperSize {
+  const region = /[-_]([A-Za-z]{2})(?:[-_]|$)/.exec(locale ?? '')?.[1]?.toUpperCase();
+  return region !== undefined && LETTER_REGIONS.has(region) ? 'letter' : 'a4';
+}
+
+export function paperDimensions(paper: PaperSize, orientation: PageOrientation): { width: number; height: number } {
+  const { width, height } = PAPER_SIZES[paper];
+  return orientation === 'landscape' ? { width: height, height: width } : { width, height };
+}
+
+export function paperPageRule(paper: PaperSize, orientation: PageOrientation, margins: PageMargins): string {
+  const box = MARGIN_SIDES.map((side) => `${tenth(margins[side])}mm`).join(' ');
+  return `@page { size: ${PAPER_SIZES[paper].css} ${orientation}; margin: ${box}; }`;
+}

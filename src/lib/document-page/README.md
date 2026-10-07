@@ -18,6 +18,10 @@ the rulers and the sheet from it.
 | `marginLabel(mm)`, `MARGIN_NAMES` | `30` → `3 cm`; the slider names |
 | `pageMarginVariables(margins)` | The `--doc-margin-*` properties the sheet reads |
 | `printPageRule(margins)` | The `@page` rule a print uses |
+| `PaperSize`, `PageOrientation`, `PAPER_SIZES` | A4 and Letter, in millimetres and as `@page` names |
+| `defaultPaperFor(locale)` | Letter where it is the norm (the Americas' Letter regions, the Philippines), A4 everywhere else |
+| `paperDimensions(paper, orientation)` | The page's width and height, turned for landscape |
+| `paperPageRule(paper, orientation, margins)` | The `@page` rule for a chosen paper — what a spreadsheet prints with |
 
 ## The rules
 

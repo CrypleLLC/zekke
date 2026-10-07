@@ -30,6 +30,10 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 | `ChartLayer.tsx` | The charts over the grid: drawing, selecting, moving, resizing, deleting, and the wheel passed to the grid |
 | `ChartCanvas.tsx` | One ECharts instance, with only the chart types and the canvas renderer it needs |
 | `ChartPanel.tsx` | The chart's settings beside the grid: title, type, series, headers, data range, delete |
+| `print-source.ts` | `SheetPrintReader`: a sheet read off Univer for printing — line sizes, merges, formatted cells, charts |
+| `chart-svg.ts` | `chartSvg`: a chart drawn by ECharts as an SVG string, for print |
+| `SheetPrint.tsx` | The print preview: the pages, exactly as they print, and the `@page` rule |
+| `PrintPanel.tsx` | The page setup beside the preview, and the Print button |
 
 The binding's modules hold no React and are tested in Node against a real, headless Univer 1.0.3
 (`binding.test.ts`), with two devices editing offline and then exchanging updates.
@@ -48,7 +52,8 @@ number formats and their UI, formulas and their UI. **Not loaded**: the network 
 adds (an HTTP service nothing here needs), and every plugin whose edits the binding does not carry
 yet (filters, data validation, conditional formatting — 147.13).
 
-**Insert chart** and **Download** sit beside undo and redo; charts are under [Charts](#charts).
+**Insert chart**, **Print** and **Download** sit beside undo and redo; charts are under
+[Charts](#charts), printing under [Printing](#printing).
 **Download** gives the whole workbook as `.xlsx`, or the sheet in view as
 CSV or TSV, built from Univer's snapshot so formulas carry their computed values, and saved
 through a `blob:` link — nothing leaves the tab but the file the person asked for.
@@ -217,10 +222,57 @@ drawn by ECharts in a layer of our own over Univer's canvas, and Univer never se
   own undo step**, undone by the same `Y.UndoManager` as a cell, from the buttons or from Univer's
   shortcut. The remote path ignores `rules`, so an undone chart reaches the layer and nothing else.
 - **ECharts adds no request.** Only the bar, line, pie and scatter charts, the grid, title, legend
-  and tooltip components and the canvas renderer are registered (`echarts/core`). Its one
+  and tooltip components and the canvas renderer are registered (`echarts/core`), plus the SVG
+  renderer for [printing](#printing). Its one
   `new Function` is in the GeoJSON loader of the map chart, which is not imported, and it has no
   network call.
 - **Not yet**: charts are not written to or read from `.xlsx`; an import still counts them as lost.
+
+## Printing
+
+**Print** (or Ctrl+P / ⌘P while the editor is open) opens a preview of the sheet in view, with its
+page setup beside it. The preview **is** what prints: the browser's print prints the same pages,
+and nothing else. What is stored, and how pages are cut, is
+[`lib/spreadsheets`](../../lib/spreadsheets/README.md#printing).
+
+- **Why not Univer's canvas.** The canvas draws only the visible part of the sheet, at screen
+  resolution; a print needs every page, sharp. The cells are therefore laid out again in HTML, one
+  absolutely placed box per cell, from what Univer computed:
+  - **the text** is `worksheet.getCell`, after the number-format interceptor — so a date, a currency
+    or a percentage prints as the grid shows it, and a number that does not fit prints as Univer
+    draws it (`getGeneralNumberDisplayText` rounds a general number, a formatted one becomes `###`);
+  - **the style** is `getComposedCellStyleByCellData` — the sheet's, the row's, the column's and the
+    cell's own, plus the colour a format gives a negative number — read through `cellLook`;
+  - **sizes** are `getRowHeight` (auto heights included) and `getColumnWidth`, a hidden line at 0;
+    **merges** are `getMergeData`.
+- **Charts print as vector SVG**: `chartSvg` renders ECharts' option server-side style
+  (`ssr: true`, no DOM) without its tooltip, and the page shows it as a `data:` image, which
+  `img-src` already allows. Inside an `<img>` an SVG can run nothing and load nothing. A chart is
+  drawn in the body of every page it reaches, clipped there, so a chart across a break prints in
+  two halves.
+- **Gridlines** are a line per row and column; a merge covers the ones inside it, a fill covers
+  them under it.
+- **The page**: each page is a `section` of the paper's size with the margins as padding; inside,
+  the regions are scaled by the layout's scale. The `@page` rule (`paperPageRule`) is a `<style>`
+  inside the preview, as for documents, because `@page` reads no custom properties. In print, the
+  margins move to `@page` and each section becomes exactly the printable box, `break-after: page`.
+- **Printing hides everything else**: the preview is portalled to `<body>`, and
+  `body:has(> .zekke-sheet-print) > :not(.zekke-sheet-print)` is hidden in print, so the app shell
+  and the canvas never reach paper. The panel is `zekke-no-print`.
+- **Print waits for the charts**: the Print button decodes every chart image before
+  `window.print()`.
+- **Settings are edits**: every change in the panel goes through `binding.editSheet` — counted
+  against the capacity, one undo step, synced. The preview re-reads the sheet 120 ms after any
+  transaction, so an edit from another device shows up.
+- **The selection is taken when the preview opens**: *Use the selected cells* sets the print area,
+  *Use the selected rows / columns* the repeated lines, and the break buttons break before the
+  selection's first row or column.
+- **Decrypted content in the DOM**, as in the document editor: the preview is `translate="no"`.
+  Every style value has been through `cellLook`'s checks, so nothing stored can make it fetch.
+
+**Not yet**: the whole workbook in one print (each sheet would need its own `@page`), headers and
+footers (the browser's own are the print dialog's setting), page breaks dragged in the preview,
+rotated text, and print settings in `.xlsx` export and import.
 
 ## The capacity guard
 

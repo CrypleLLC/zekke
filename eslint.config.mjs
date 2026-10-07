@@ -117,12 +117,14 @@ const config = [
 
   // next/image optimises by fetching the source on the server. A drive thumbnail
   // and an image in the media viewer are blob: URLs of bytes decrypted in this
-  // tab, which no server can fetch and none may see, so <img> is the only option
+  // tab, and a printed chart is a data: URL of an SVG drawn from decrypted cells,
+  // which no server can fetch and none may see, so <img> is the only option
   // here rather than the lazy one.
   {
     files: [
       "src/components/drive/DriveScreen.tsx",
       "src/components/modal/MediaViewer.tsx",
+      "src/components/spreadsheets/SheetPrint.tsx",
     ],
     rules: {
       "@next/next/no-img-element": "off",
