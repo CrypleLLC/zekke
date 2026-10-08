@@ -486,12 +486,15 @@ describe('what waits in the Trash', () => {
       if (path === '/documents' || path === '/documents/folders') {
         return { status: 200, body: { data: [] } };
       }
+      if (path === '/preferences') {
+        return { status: 404, body: { code: 'NOT_FOUND' } };
+      }
       return { status: 200, body: { data: { requested: 1, rekeyed: 1 } } };
     });
 
     const [outcome] = await rewrapAfterRotation(context, ['documents']);
 
-    expect(outcome).toEqual({ scope: 'documents', requested: 1, rekeyed: 1, folders: 1 });
+    expect(outcome).toEqual({ scope: 'documents', requested: 1, rekeyed: 1, folders: 1, preferences: 0 });
     const puts = calls.filter((call) => call.init.method === 'PUT');
     expect(puts.map((call) => [new URL(call.url).pathname, (bodyOf(call.init).items as { id: string }[]).map((item) => item.id)])).toEqual([
       ['/documents/keys', [trashedDocument]],

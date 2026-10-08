@@ -1,10 +1,13 @@
 import type { IWorkbookData, LocaleType } from '@univerjs/core';
 import * as Y from 'yjs';
 import { writeTitle } from '@/lib/documents/content';
+import type { SpreadsheetRegional } from '@/lib/regional';
 import { SNAPSHOT_RAW_BYTES_LIMIT, checkCapacity, estimateWorkbookBytes, type CapacityRefusal } from './capacity';
 import { delimitedToWorkbookData, sheetToDelimited, type Delimiter } from './csv';
+import { featureRulesOfWorkbook, writeFeatureRules } from './features';
 import { FORMULA_CODEC } from './formulas';
 import { readNames, writeName } from './names';
+import { writeSheetRegional } from './sheet-regional';
 import { readSheets } from './sheets';
 import { WorkbookIndex, fromWorkbookData } from './workbook';
 import { readXlsx, writeXlsx, type ExportedName, type InterchangeReport } from './xlsx';
@@ -65,7 +68,11 @@ export interface ImportedSpreadsheet {
   sheets: number;
 }
 
-export async function importSpreadsheet(fileName: string, bytes: Uint8Array): Promise<ImportedSpreadsheet> {
+export async function importSpreadsheet(
+  fileName: string,
+  bytes: Uint8Array,
+  regional?: SpreadsheetRegional,
+): Promise<ImportedSpreadsheet> {
   const format = formatOf(fileName);
   if (format === undefined) {
     throw new UnsupportedFormatError(fileName);
@@ -81,6 +88,7 @@ export async function importSpreadsheet(fileName: string, bytes: Uint8Array): Pr
       : {
           workbook: delimitedToWorkbookData(decodeText(bytes), identity, format === 'tsv' ? '\t' : undefined),
           names: [],
+          features: {},
           report: {},
         };
 
@@ -94,8 +102,14 @@ export async function importSpreadsheet(fileName: string, bytes: Uint8Array): Pr
   try {
     fromWorkbookData(doc, imported.workbook, FORMULA_CODEC);
     writeTitle(doc, title);
+    if (regional !== undefined) {
+      writeSheetRegional(doc, regional);
+    }
     const workbook = new WorkbookIndex(doc);
     const scope = workbook.sheetIds()[0];
+    for (const [sheetId, rules] of Object.entries(imported.features)) {
+      writeFeatureRules(doc, sheetId, rules, FORMULA_CODEC);
+    }
     imported.names.forEach((name, index) => {
       writeName(doc, `imported-${index}`, {
         name: name.name,
@@ -125,7 +139,7 @@ export function exportedNames(doc: Y.Doc): ExportedName[] {
 }
 
 export async function exportXlsx(workbook: IWorkbookData, doc: Y.Doc): Promise<Uint8Array> {
-  return writeXlsx(workbook, exportedNames(doc));
+  return writeXlsx(workbook, exportedNames(doc), featureRulesOfWorkbook(doc, FORMULA_CODEC));
 }
 
 export function exportDelimited(workbook: IWorkbookData, sheetId: string, delimiter: Delimiter): string {

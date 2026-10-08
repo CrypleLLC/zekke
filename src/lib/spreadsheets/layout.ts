@@ -4,6 +4,7 @@ export const META_MAP = 'meta';
 export const TITLE_FIELD = 'title';
 export const KIND_FIELD = 'kind';
 export const SPREADSHEET_KIND = 'spreadsheet';
+export const REPLACED_BY_FIELD = 'replacedBy';
 
 export const SHEET_ORDER = 'sheetOrder';
 export const SHEETS = 'sheets';
@@ -20,6 +21,7 @@ export const SHEET_DEFAULT_STYLE = 'defaultStyle';
 export const SHEET_RIGHT_TO_LEFT = 'rightToLeft';
 export const SHEET_DEFAULT_ROW_HEIGHT = 'defaultRowHeight';
 export const SHEET_DEFAULT_COLUMN_WIDTH = 'defaultColumnWidth';
+export const SHEET_PAGE_SETUP = 'pageSetup';
 export const SHEET_ROW_ORDER = 'rowOrder';
 export const SHEET_COLUMN_ORDER = 'columnOrder';
 export const SHEET_REMOVED_ROWS = 'removedRows';
@@ -48,6 +50,13 @@ export function readKind(doc: Y.Doc): string | undefined {
 
 export function isSpreadsheet(doc: Y.Doc): boolean {
   return readKind(doc) === SPREADSHEET_KIND;
+}
+
+export function readReplacedBy(doc: Y.Doc): string | undefined {
+  const stored = doc.getMap(META_MAP).get(REPLACED_BY_FIELD);
+  return typeof stored === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(stored)
+    ? stored
+    : undefined;
 }
 
 export function markSpreadsheet(doc: Y.Doc, origin?: unknown): void {

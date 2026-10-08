@@ -1,0 +1,282 @@
+{
+ "FIND": {
+  "name": "FIND",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FINDB": {
+  "name": "FINDB",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "ACOS": {
+  "name": "ACOS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AMORLINC": {
+  "name": "AMORLINC",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN": {
+  "name": "ATAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN2": {
+  "name": "ATAN2",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CORREL": {
+  "name": "CORREL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COS": {
+  "name": "COS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COVAR": {
+  "name": "COVAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CSC": {
+  "name": "CSC",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DECIMAL": {
+  "name": "DECIMAL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAUSS": {
+  "name": "GAUSS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LAMBDA": {
+  "name": "LAMBDA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LET": {
+  "name": "LET",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MAP": {
+  "name": "MAP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NOMINAL": {
+  "name": "NOMINAL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "PEARSON": {
+  "name": "PEARSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TAN": {
+  "name": "TAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR": {
+  "name": "VAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.P": {
+  "name": "VAR.P",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.S": {
+  "name": "VAR.S",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARA": {
+  "name": "VARA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARP": {
+  "name": "VARP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARPA": {
+  "name": "VARPA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AND": {
+  "name": "E",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CHISQ.DIST.RT": {
+  "name": "DIST.CHIQ.DIR",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CONCATENATE": {
+  "name": "CONCATENAR",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "DATE": {
+  "name": "DATA",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "IFS": {
+  "name": "SE.S",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "NOT": {
+  "name": "NÃO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "OR": {
+  "name": "OU",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "SWITCH": {
+  "name": "PARÂMETRO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "TEXT": {
+  "name": "TEXTO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "VLOOKUP": {
+  "name": "PROCV",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "ISERR": {
+  "name": "É.ERROS",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISERROR": {
+  "name": "É.ERRO",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISLOGICAL": {
+  "name": "É.LÓGICO",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISNA": {
+  "name": "É.NÃO.DISP",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISNONTEXT": {
+  "name": "É.NÃO.TEXTO",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISNUMBER": {
+  "name": "É.NÚM",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISREF": {
+  "name": "É.REF",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISTEXT": {
+  "name": "É.TEXTO",
+  "why": "the IS functions article: its syntax list and its example formulas pair it the same way"
+ },
+ "ISODD": {
+  "name": "ISODD",
+  "why": "the IS functions article omits it from its European Portuguese syntax list: Microsoft’s European Portuguese text does not establish a name: kept in English"
+ },
+ "EXPAND": {
+  "name": "EXPAND",
+  "why": "the article is untranslated: Microsoft’s European Portuguese text does not establish a name: kept in English"
+ },
+ "NORM.S.DIST": {
+  "name": "DIST.S.NORM",
+  "why": "the example formulas use DIST.S.NORM, as the GAUSS article does; the syntax line is empty"
+ },
+ "FORECAST.LINEAR": {
+  "name": "PREVISÃO.LINEAR",
+  "why": "the forecast-and-forecast-linear article names it in its syntax line"
+ },
+ "CEILING.MATH": {
+  "name": "ARRED.EXCESSO.MAT",
+  "why": "the example formulas use ARRED.EXCESSO.MAT; the syntax line is machine-translated (TETO. MATEMÁTICA)"
+ },
+ "CONFIDENCE.T": {
+  "name": "INT.CONFIANÇA.T",
+  "why": "the syntax line says INT.CONFIANÇA.T, like CONFIDENCE.NORM; the example drops the prefix"
+ },
+ "MULTINOMIAL": {
+  "name": "POLINOMIAL",
+  "why": "the syntax line says POLINOMIAL; the example misspells it (POLINOMINAL)"
+ },
+ "ODDFYIELD": {
+  "name": "LUCROPRIMINC",
+  "why": "its article names it LUCROPRIMINC"
+ },
+ "ODDLYIELD": {
+  "name": "LUCROÚLTINC",
+  "why": "the example formulas use LUCROÚLTINC; the syntax line carries ODDFYIELD’s name"
+ },
+ "ISFORMULA": {
+  "name": "É.FORMULA",
+  "why": "named in its article"
+ },
+ "PERCENTILE.EXC": {
+  "name": "PERCENTIL.EXC",
+  "why": "the syntax line splits the name with markup (PERCENTIL. EXC); joined, it is PERCENTIL.EXC, which matches PERCENTIL.INC"
+ },
+ "CHOOSEROWS": {
+  "name": "ESCOLHERLINS",
+  "why": "the localized index names it ESCOLHERLINS, matching its sibling CHOOSECOLS = ESCOLHERCOLS; its own article was left in English"
+ },
+ "TOCOL": {
+  "name": "PARACOL",
+  "why": "the localized index names it PARACOL, matching its sibling TOROW = PARALIN; its own article was left in English"
+ },
+ "REGEXEXTRACT": {
+  "name": "REGEXEXTRACT",
+  "why": "the three REGEX functions are named inconsistently across the article and the index: Microsoft’s European Portuguese text does not establish a name: kept in English"
+ },
+ "REGEXREPLACE": {
+  "name": "REGEXREPLACE",
+  "why": "the three REGEX functions are named inconsistently across the article and the index: Microsoft’s European Portuguese text does not establish a name: kept in English"
+ },
+ "REGEXTEST": {
+  "name": "REGEXTEST",
+  "why": "the three REGEX functions are named inconsistently across the article and the index: Microsoft’s European Portuguese text does not establish a name: kept in English"
+ },
+ "COLUMN": {
+  "name": "COL",
+  "why": "the localized index says COLUNA, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "DROP": {
+  "name": "DROP",
+  "why": "only the localized index names it (EXCLUIR), and the index is machine-translated in many entries: kept in English"
+ },
+ "FACT": {
+  "name": "FATORIAL",
+  "why": "the localized index says FATO, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "FACTDOUBLE": {
+  "name": "FATDUPLO",
+  "why": "the localized index says FACTDUPLO, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "FIXED": {
+  "name": "FIXA",
+  "why": "the localized index says CORRIGIDO, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "MAKEARRAY": {
+  "name": "MAKEARRAY",
+  "why": "only the localized index names it (MARARRAY), and the index is machine-translated in many entries: kept in English"
+ },
+ "MATCH": {
+  "name": "CORRESP",
+  "why": "the localized index says CORRESPONDÊNCIA, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "NA": {
+  "name": "NÃO.DISP",
+  "why": "the localized index says ND, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "ROW": {
+  "name": "LIN",
+  "why": "the localized index says LINHA, but it is machine-translated or older in many entries (MATCH as CORRESPONDÊNCIA, FIXED as CORRIGIDO); the article’s name stands"
+ },
+ "TAKE": {
+  "name": "TAKE",
+  "why": "only the localized index names it (INCLUIR), and the index is machine-translated in many entries: kept in English"
+ },
+ "WRAPCOLS": {
+  "name": "WRAPCOLS",
+  "why": "only the localized index names it (MOLDARCOLS), and the index is machine-translated in many entries: kept in English"
+ },
+ "WRAPROWS": {
+  "name": "WRAPROWS",
+  "why": "only the localized index names it (MOLDARLINS), and the index is machine-translated in many entries: kept in English"
+ }
+}

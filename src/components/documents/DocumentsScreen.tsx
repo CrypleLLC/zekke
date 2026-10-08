@@ -12,6 +12,7 @@ import {
 } from '@/lib/documents';
 import { ApiError } from '@/lib/api';
 import { descendantsOf, moveItemsToFolder } from '@/lib/folders';
+import { activeRegional, spreadsheetDefaults } from '@/lib/regional';
 import { createSpreadsheet } from '@/lib/spreadsheets/api';
 import { IMPORT_ACCEPT, importSpreadsheet, titleFromFileName } from '@/lib/spreadsheets/interchange';
 import {
@@ -240,7 +241,7 @@ export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
     setBusy(true);
     try {
       const id =
-        kind === 'spreadsheet' ? (await createSpreadsheet(context)).id : (await createDocument(context)).document.id;
+        kind === 'spreadsheet' ? (await createSpreadsheet(context, spreadsheetDefaults(activeRegional()))).id : (await createDocument(context)).document.id;
       if (openFolder !== null) {
         await moveItemsToFolder(context, 'documents', [id], openFolder);
       }
@@ -260,7 +261,7 @@ export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
       setMessage(undefined);
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const result = await importSpreadsheet(file.name, bytes);
+        const result = await importSpreadsheet(file.name, bytes, spreadsheetDefaults(activeRegional()));
         const record = await createDocumentFromSnapshot(context, result.snapshot);
         result.snapshot.fill(0);
         if (openFolder !== null) {

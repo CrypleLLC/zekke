@@ -9,6 +9,7 @@ describe('the settings tabs', () => {
       'devices',
       'username',
       'pin',
+      'region',
       'plan',
       'account',
     ]);

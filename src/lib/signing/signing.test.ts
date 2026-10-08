@@ -205,8 +205,8 @@ describe('the four batchable delete actions', () => {
 });
 
 describe('the action table matches signed-actions.md', () => {
-  it('covers all 35 actions', () => {
-    expect(Object.keys(ACTIONS)).toHaveLength(35);
+  it('covers all 36 actions', () => {
+    expect(Object.keys(ACTIONS)).toHaveLength(36);
   });
 
   it('keeps destroying a deleted secret a different action from deleting one', () => {

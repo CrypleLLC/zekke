@@ -1,0 +1,406 @@
+{
+ "MODE.MULT": {
+  "name": "MODO.MULT",
+  "why": "the mode-mult article writes MODO.MULT; MULT is PRODUCT"
+ },
+ "HYPERLINK": {
+  "name": "HIPERLINK",
+  "why": "the article names the function HIPERLINK; its syntax line was left in English"
+ },
+ "TEXTAFTER": {
+  "name": "TEXTODEPOIS",
+  "why": "the article names the function TEXTODEPOIS; its syntax line was left in English"
+ },
+ "TEXTBEFORE": {
+  "name": "TEXTOANTES",
+  "why": "the article names the function TEXTOANTES; its syntax line was left in English"
+ },
+ "WRAPROWS": {
+  "name": "QUEBRALINHAS",
+  "why": "the article names the function QUEBRALINHAS; its syntax line was left in English"
+ },
+ "CHAR": {
+  "name": "CARACT",
+  "why": "first name of the syntax line; the article also cites the English CHAR"
+ },
+ "DAYS360": {
+  "name": "DIAS360",
+  "why": "first name of the syntax line (EUA is a method argument)"
+ },
+ "YEARFRAC": {
+  "name": "FRAÇÃOANO",
+  "why": "first name of the syntax line (USA, EUA are method arguments)"
+ },
+ "EXPAND": {
+  "name": "EXPAND",
+  "why": "the pt-BR article is untranslated, so Microsoft does not establish a name: kept in English"
+ },
+ "ACOS": {
+  "name": "ACOS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AMORLINC": {
+  "name": "AMORLINC",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN": {
+  "name": "ATAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN2": {
+  "name": "ATAN2",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CORREL": {
+  "name": "CORREL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COS": {
+  "name": "COS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COVAR": {
+  "name": "COVAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DECIMAL": {
+  "name": "DECIMAL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAUSS": {
+  "name": "GAUSS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LAMBDA": {
+  "name": "LAMBDA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LET": {
+  "name": "LET",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NOMINAL": {
+  "name": "NOMINAL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "PEARSON": {
+  "name": "PEARSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TAN": {
+  "name": "TAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR": {
+  "name": "VAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.P": {
+  "name": "VAR.P",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARA": {
+  "name": "VARA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARP": {
+  "name": "VARP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARPA": {
+  "name": "VARPA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AND": {
+  "name": "E",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "CONCATENATE": {
+  "name": "CONCATENAR",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "DATE": {
+  "name": "DATA",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "IFS": {
+  "name": "SES",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "NOT": {
+  "name": "NÃO",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "OR": {
+  "name": "OU",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "RATE": {
+  "name": "TAXA",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "SWITCH": {
+  "name": "PARÂMETRO",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "TEXT": {
+  "name": "TEXTO",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "VLOOKUP": {
+  "name": "PROCV",
+  "why": "the article has no syntax heading; taken from the article, whose names follow the English one by one"
+ },
+ "FIND": {
+  "name": "FIND",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FINDB": {
+  "name": "FINDB",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FORECAST.LINEAR": {
+  "name": "PREVISÃO.LINEAR",
+  "why": "the forecast-and-forecast-linear article names it in its syntax line"
+ },
+ "CEILING.MATH": {
+  "name": "TETO.MAT",
+  "why": "the article names the function TETO.MAT; its syntax line is garbled (TETO. MATH)"
+ },
+ "PERCENTILE.EXC": {
+  "name": "PERCENTIL.EXC",
+  "why": "the syntax line splits the name with markup (PERCENTIL. EXC); joined, it is PERCENTIL.EXC, which matches PERCENTIL.INC"
+ },
+ "ISERR": {
+  "name": "ÉERRO",
+  "why": "the IS functions article’s syntax list pairs it this way (ISERR = ÉERRO, ISERROR = ÉERROS), as Excel pt-BR names them; its example formulas suggest the reverse, which the syntax and Excel do not support"
+ },
+ "ISREF": {
+  "name": "ÉREF",
+  "why": "named in the IS functions article"
+ },
+ "ISTEXT": {
+  "name": "ÉTEXTO",
+  "why": "named in the IS functions article"
+ },
+ "CELL": {
+  "name": "CÉL",
+  "why": "Microsoft writes both; the example spells the English word out (CÉLULA), the syntax line gives the abbreviation Excel uses"
+ },
+ "COLUMN": {
+  "name": "COL",
+  "why": "Microsoft writes both; the example spells the English word out (COLUNA), the syntax line gives the abbreviation Excel uses"
+ },
+ "FACT": {
+  "name": "FATORIAL",
+  "why": "the syntax line says FATORIAL; FATO in an example is a literal translation of the word"
+ },
+ "DSUM": {
+  "name": "BDSOMA",
+  "why": "the syntax line says BDSOMA; the examples (DSSUM, DSSOMA) are garbled"
+ },
+ "ISNUMBER": {
+  "name": "ÉNÚM",
+  "why": "the IS article’s example formulas use ÉNÚM beside the other IS names; the syntax line spells it out (ÉNÚMERO)"
+ },
+ "ARABIC": {
+  "name": "ARÁBICO",
+  "why": "the localized index says ÁRABE, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "AVERAGEIF": {
+  "name": "MÉDIASE",
+  "why": "the localized index says MÉDIAIF, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "BITAND": {
+  "name": "BITAND",
+  "why": "only the localized index names it (BIT.E), and the index is machine-translated in many entries: kept in English"
+ },
+ "BITLSHIFT": {
+  "name": "DESLOCESQBIT",
+  "why": "the localized index says BITDESL.ESQ, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "BITOR": {
+  "name": "BITOR",
+  "why": "only the localized index names it (BIT.OU), and the index is machine-translated in many entries: kept in English"
+ },
+ "BITRSHIFT": {
+  "name": "DESLOCDIRBIT",
+  "why": "the localized index says BITDESL.DIR, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "BITXOR": {
+  "name": "BITXOR",
+  "why": "only the localized index names it (BIT.XOU), and the index is machine-translated in many entries: kept in English"
+ },
+ "CHIDIST": {
+  "name": "DIST.QUI",
+  "why": "the localized index says QUIDIST, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "CHIINV": {
+  "name": "INV.QUI",
+  "why": "the localized index says QUIINV, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "CHITEST": {
+  "name": "TESTE.QUI",
+  "why": "the localized index says QUITEST, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "CHOOSE": {
+  "name": "ESCOLHER",
+  "why": "the localized index says ESCOLHA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "CHOOSEROWS": {
+  "name": "ESCOLHERLINS",
+  "why": "the localized index names it ESCOLHERLINS, matching its sibling CHOOSECOLS = ESCOLHERCOLS; its own article was left in English"
+ },
+ "CLEAN": {
+  "name": "TIRAR",
+  "why": "the localized index says LIMPAR, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "COLUMNS": {
+  "name": "COLS",
+  "why": "the localized index says COLUNAS, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "COMBIN": {
+  "name": "COMBIN",
+  "why": "only the localized index names it (COMBINAR), and the index is machine-translated in many entries: kept in English"
+ },
+ "COMBINA": {
+  "name": "COMBINA",
+  "why": "only the localized index names it (COMBIN.R), and the index is machine-translated in many entries: kept in English"
+ },
+ "CONFIDENCE": {
+  "name": "INT.CONFIANÇA",
+  "why": "the localized index says CONFIANÇA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "COUNTBLANK": {
+  "name": "CONTAR.VAZIO",
+  "why": "the localized index names it CONTAR.VAZIO and that is Excel pt-BR’s name; its own article was left in English"
+ },
+ "DOLLAR": {
+  "name": "MOEDA",
+  "why": "the localized index says DÓLAR, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "DROP": {
+  "name": "DROP",
+  "why": "only the localized index names it (DESCARTAR), and the index is machine-translated in many entries: kept in English"
+ },
+ "FILTER": {
+  "name": "FILTRO",
+  "why": "the localized index says FILTRAR, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "FIXED": {
+  "name": "DEF.NÚM.DEC",
+  "why": "the localized index says CORRIGIDO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "FREQUENCY": {
+  "name": "FREQÜÊNCIA",
+  "why": "the localized index says FREQUÊNCIA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "ISPMT": {
+  "name": "ÉPGTO",
+  "why": "the localized index says ISPGTO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "MATCH": {
+  "name": "CORRESP",
+  "why": "the localized index says CORRESPONDER, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "MAX": {
+  "name": "MÁXIMO",
+  "why": "the localized index says MÁX, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "MIN": {
+  "name": "MÍNIMO",
+  "why": "the localized index says MÍN, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "MUNIT": {
+  "name": "MUNIT",
+  "why": "only the localized index names it (UNIDM), and the index is machine-translated in many entries: kept in English"
+ },
+ "NUMBERVALUE": {
+  "name": "VALORNUMÉRICO",
+  "why": "the localized index says VALOR.NÚMERO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "POWER": {
+  "name": "POTÊNCIA",
+  "why": "the localized index says ENERGIA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "PRODUCT": {
+  "name": "MULT",
+  "why": "the localized index says PRODUTO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "RANK": {
+  "name": "ORDEM",
+  "why": "the localized index says CLASSIFICAÇÃO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "RECEIVED": {
+  "name": "RECEBER",
+  "why": "the localized index says RECEBIDO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "REGEXEXTRACT": {
+  "name": "REGEXEXTRACT",
+  "why": "only the localized index names it (REGEX.EXTRAIR), and the index is machine-translated in many entries: kept in English"
+ },
+ "REGEXREPLACE": {
+  "name": "REGEXREPLACE",
+  "why": "only the localized index names it (REGEX.SUBSTITUIR), and the index is machine-translated in many entries: kept in English"
+ },
+ "REGEXTEST": {
+  "name": "REGEXTEST",
+  "why": "only the localized index names it (REGEX.TESTAR), and the index is machine-translated in many entries: kept in English"
+ },
+ "ROW": {
+  "name": "LIN",
+  "why": "the localized index says LINHA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "RRI": {
+  "name": "TAXAJURO",
+  "why": "the localized index says DEVOLVERTAXAJUROS, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "SHEET": {
+  "name": "PLAN",
+  "why": "the localized index says FOLHA, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "SHEETS": {
+  "name": "PLANS",
+  "why": "the localized index says FOLHAS, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "T.DIST.2T": {
+  "name": "DIST.T.BC",
+  "why": "the localized index says DIST.T.2C, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "T.INV.2T": {
+  "name": "INV.T.BC",
+  "why": "the localized index says INV.T.2C, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "TAKE": {
+  "name": "TAKE",
+  "why": "only the localized index names it (PEGAR), and the index is machine-translated in many entries: kept in English"
+ },
+ "TIME": {
+  "name": "TEMPO",
+  "why": "the localized index says HORÁRIO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "TOCOL": {
+  "name": "PARACOL",
+  "why": "the localized index names it PARACOL, matching COLUMN = COL; its own article was left in English"
+ },
+ "TOROW": {
+  "name": "PARALIN",
+  "why": "the localized index names it PARALIN, matching ROW = LIN; its own article was left in English"
+ },
+ "TREND": {
+  "name": "TENDÊNCIA",
+  "why": "the localized index names it TENDÊNCIA and the LINEST article uses TENDÊNCIA; its own article was left in English"
+ },
+ "UNICHAR": {
+  "name": "CARACTUNICODE",
+  "why": "the localized index says UNICARÁT, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "YIELD": {
+  "name": "LUCRO",
+  "why": "the localized index says RENDIMENTO, but it is machine-translated in many entries (POWER as ENERGIA, PRODUCT as PRODUTO); the article’s name stands"
+ },
+ "ISERROR": {
+  "name": "ÉERROS",
+  "why": "the IS functions article’s syntax list pairs it this way (ISERR = ÉERRO, ISERROR = ÉERROS), as Excel pt-BR names them; its example formulas suggest the reverse, which the syntax and Excel do not support"
+ }
+}

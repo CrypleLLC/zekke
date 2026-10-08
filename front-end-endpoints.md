@@ -53,6 +53,7 @@ STALE_KEY_GENERATION` when it is not the scope's current one.
 - [23. Billing Endpoints](#23-billing-endpoints)
 - [24. Notifications Endpoints](#24-notifications-endpoints)
 - [25. Client Version Endpoints](#25-client-version-endpoints)
+- [26. Preferences Endpoints](#26-preferences-endpoints)
 
 ---
 
@@ -2675,3 +2676,49 @@ Read it when the app starts:
 policy cannot be read, carry on.
 
 **Errors:** `404 NOT_FOUND` (no policy for that platform yet) · `500 INTERNAL_ERROR`.
+
+---
+
+## 26. Preferences Endpoints
+
+**One sealed blob per account**: the user's regional settings — country, date and time formats,
+number format, currency, units, the language of spreadsheet function names — and whatever else the
+client keeps there. Read [ADR 00021](../api-general/docs/adr/00021_account_preferences.md). The server stores it,
+its revision and the generation its key is wrapped under, and reads none of it.
+
+Both routes sit in the **`documents` scope group**: a device without `documents` gets `404`, and the
+blob's DEK is wrapped under the **`documents` KEK**. The browser extension holds only `passwords` and
+never sees them.
+
+### `GET /preferences` · `PUT /preferences`
+
+`GET` → `200 { ciphertext, wrapped_dek, key_generation, revision, updated_at }`, or `404` before
+the first `PUT`.
+
+**Request (`PUT`):**
+
+```json
+{
+  "ciphertext": "sealed(DEK, preferences)",
+  "wrapped_dek": "sealed(documents KEK, DEK)",
+  "key_generation": 2,
+  "expected_revision": 0,
+  "challenge": "...",
+  "timestamp": 1785000000,
+  "signature": "..."
+}
+```
+
+**Signed action `preferences-update`**, by the calling device, over `expected_revision` and the hex
+SHA-256 of `ciphertext`. A limited device holding `documents` may sign it: nothing is destroyed.
+
+`expected_revision: 0` creates the row; `n` replaces revision `n` with `n+1`. Answers `200` with the
+stored row. `ciphertext` is at most 64 KiB of base64, `wrapped_dek` at most 4 KiB, and
+`key_generation` must be the `documents` scope's current one. **After a rotation, re-seal it** under
+the new generation: it is read with whatever generation it carries, but only written with the
+current one.
+
+**Errors:** `400 INVALID_BODY` · `400 BAD_REQUEST` (empty, oversized or non-base64 blob, a negative
+revision, no `key_generation`) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND`
+(nothing stored yet, or a device without `documents`) · `409 CONFLICT` (stale revision: read, merge,
+retry) · `409 STALE_KEY_GENERATION`.

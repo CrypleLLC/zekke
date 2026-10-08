@@ -1,0 +1,1157 @@
+{
+ "pt-BR": {
+  "kept in English": [
+   "ABS",
+   "ACOS",
+   "ACOSH",
+   "ACOT",
+   "ACOTH",
+   "AMORLINC",
+   "ASC",
+   "ATAN",
+   "ATAN2",
+   "ATANH",
+   "BAHTTEXT",
+   "BASE",
+   "BESSELI",
+   "BESSELJ",
+   "BESSELK",
+   "BESSELY",
+   "BITAND",
+   "BITOR",
+   "BITXOR",
+   "BYCOL",
+   "BYROW",
+   "COMBIN",
+   "COMBINA",
+   "CONCAT",
+   "CORREL",
+   "COS",
+   "COSH",
+   "COT",
+   "COTH",
+   "COVAR",
+   "DBCS",
+   "DECIMAL",
+   "DELTA",
+   "DROP",
+   "EXP",
+   "EXPAND",
+   "FIND",
+   "FINDB",
+   "FISHER",
+   "FISHERINV",
+   "GAUSS",
+   "GROUPBY",
+   "IMABS",
+   "IMCOS",
+   "IMCOSH",
+   "IMCOT",
+   "IMDIV",
+   "IMEXP",
+   "IMLN",
+   "IMLOG10",
+   "IMLOG2",
+   "IMREAL",
+   "IMSEC",
+   "IMSECH",
+   "IMTAN",
+   "INT",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "MAKEARRAY",
+   "MOD",
+   "MULTINOMIAL",
+   "MUNIT",
+   "NOMINAL",
+   "NPER",
+   "PEARSON",
+   "PERMUT",
+   "PHI",
+   "PI",
+   "POISSON",
+   "PROB",
+   "REDUCE",
+   "REGEXEXTRACT",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "REPT",
+   "SCAN",
+   "SEC",
+   "SECH",
+   "SUBTOTAL",
+   "TAKE",
+   "TAN",
+   "TANH",
+   "UNICODE",
+   "VAR",
+   "VAR.P",
+   "VARA",
+   "VARP",
+   "VARPA",
+   "WEIBULL",
+   "XOR"
+  ],
+  "resolved": 491,
+  "wanted": 491,
+  "missing": [],
+  "clashes": {},
+  "open flags": [],
+  "complete": true
+ },
+ "pt-PT": {
+  "kept in English": [
+   "ABS",
+   "ACOS",
+   "ACOSH",
+   "ACOT",
+   "ACOTH",
+   "AMORLINC",
+   "ASC",
+   "ATAN",
+   "ATAN2",
+   "ATANH",
+   "BASE",
+   "BESSELI",
+   "BESSELJ",
+   "BESSELK",
+   "BESSELY",
+   "BYCOL",
+   "BYROW",
+   "COMBIN",
+   "CONCAT",
+   "CORREL",
+   "COS",
+   "COSH",
+   "COT",
+   "COTH",
+   "COVAR",
+   "CSC",
+   "CSCH",
+   "DBCS",
+   "DECIMAL",
+   "DELTA",
+   "DROP",
+   "EXP",
+   "EXPAND",
+   "FIND",
+   "FINDB",
+   "FISHER",
+   "FISHERINV",
+   "GAUSS",
+   "IMABS",
+   "IMCOS",
+   "IMCOSH",
+   "IMCOT",
+   "IMCSC",
+   "IMCSCH",
+   "IMDIV",
+   "IMEXP",
+   "IMLN",
+   "IMLOG10",
+   "IMLOG2",
+   "IMREAL",
+   "IMSEC",
+   "IMSECH",
+   "IMTAN",
+   "INT",
+   "ISODD",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "MAKEARRAY",
+   "MAP",
+   "NOMINAL",
+   "NPER",
+   "PEARSON",
+   "PHI",
+   "PI",
+   "POISSON",
+   "PROB",
+   "REDUCE",
+   "REGEXEXTRACT",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "SCAN",
+   "SEC",
+   "SECH",
+   "SUBTOTAL",
+   "TAKE",
+   "TAN",
+   "TANH",
+   "UNICODE",
+   "VAR",
+   "VAR.P",
+   "VAR.S",
+   "VARA",
+   "VARP",
+   "VARPA",
+   "WEIBULL",
+   "WRAPCOLS",
+   "WRAPROWS"
+  ],
+  "resolved": 491,
+  "wanted": 491,
+  "missing": [],
+  "clashes": {},
+  "open flags": [],
+  "complete": true
+ },
+ "es": {
+  "kept in English": [
+   "ABS",
+   "ACOS",
+   "ACOSH",
+   "ACOT",
+   "ACOTH",
+   "AREAS",
+   "ASC",
+   "ATAN",
+   "ATAN2",
+   "ATANH",
+   "BASE",
+   "BESSELI",
+   "BESSELJ",
+   "BESSELK",
+   "BESSELY",
+   "BYCOL",
+   "BYROW",
+   "COMBINA",
+   "CONCAT",
+   "COS",
+   "COSH",
+   "COT",
+   "COTH",
+   "COVAR",
+   "CSC",
+   "CSCH",
+   "DB",
+   "DBCS",
+   "DDB",
+   "DELTA",
+   "EXP",
+   "FACT",
+   "FIND",
+   "FINDB",
+   "FISHER",
+   "GAMMA",
+   "GAUSS",
+   "ISODD",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "MAKEARRAY",
+   "MAP",
+   "MAX",
+   "MAXA",
+   "MDETERM",
+   "MIN",
+   "MINA",
+   "MMULT",
+   "MULTINOMIAL",
+   "NEGBINOM.DIST",
+   "NEGBINOMDIST",
+   "NPER",
+   "PEARSON",
+   "PERCENTOF",
+   "PI",
+   "POISSON",
+   "POISSON.DIST",
+   "REDUCE",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "RRI",
+   "SCAN",
+   "SEC",
+   "SECH",
+   "SLN",
+   "SYD",
+   "TAN",
+   "TANH",
+   "UNICODE",
+   "UNIQUE",
+   "VAR",
+   "VAR.P",
+   "VAR.S",
+   "VARA",
+   "VARP",
+   "VARPA",
+   "WRAPCOLS",
+   "WRAPROWS"
+  ],
+  "resolved": 491,
+  "wanted": 491,
+  "missing": [],
+  "clashes": {},
+  "open flags": [],
+  "complete": true
+ },
+ "fr": {
+  "kept in English": [
+   "ABS",
+   "ACOS",
+   "ACOSH",
+   "ACOT",
+   "ACOTH",
+   "AMORLINC",
+   "ARABIC",
+   "ASC",
+   "ASIN",
+   "ASINH",
+   "ATAN",
+   "ATAN2",
+   "ATANH",
+   "AVERAGEA",
+   "BAHTTEXT",
+   "BASE",
+   "BESSELI",
+   "BESSELJ",
+   "BESSELK",
+   "BESSELY",
+   "BYCOL",
+   "BYROW",
+   "CHISQ.TEST",
+   "CODE",
+   "COMBIN",
+   "COMBINA",
+   "CONCAT",
+   "CONVERT",
+   "COS",
+   "COSH",
+   "COT",
+   "COTH",
+   "CSC",
+   "CSCH",
+   "DATE",
+   "DATEDIF",
+   "DB",
+   "DBCS",
+   "DDB",
+   "DECIMAL",
+   "DELTA",
+   "ENCODEURL",
+   "ERF",
+   "ERFC",
+   "EXACT",
+   "EXP",
+   "F.TEST",
+   "FACT",
+   "FACTDOUBLE",
+   "FIND",
+   "FINDB",
+   "FISHER",
+   "GAMMA",
+   "GAUSS",
+   "IMAGE",
+   "INDEX",
+   "INDIRECT",
+   "ISODD",
+   "ISPMT",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "MAKEARRAY",
+   "MAP",
+   "MAX",
+   "MAXA",
+   "MIN",
+   "MINA",
+   "MINUTE",
+   "MOD",
+   "MODE",
+   "NA",
+   "PEARSON",
+   "PERCENTILE.EXC",
+   "PERMUTATIONA",
+   "PHI",
+   "PI",
+   "QUARTILE",
+   "QUOTIENT",
+   "RADIANS",
+   "RANDARRAY",
+   "REDUCE",
+   "REGEXEXTRACT",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "REPT",
+   "SCAN",
+   "SEC",
+   "SECH",
+   "SEQUENCE",
+   "SIN",
+   "SINH",
+   "STDEVA",
+   "STDEVPA",
+   "SYD",
+   "T.TEST",
+   "TAKE",
+   "TAN",
+   "TANH",
+   "TRANSPOSE",
+   "TYPE",
+   "UNICODE",
+   "UNIQUE",
+   "VAR",
+   "VAR.S",
+   "VARA",
+   "VARPA",
+   "VDB",
+   "Z.TEST"
+  ],
+  "resolved": 491,
+  "wanted": 491,
+  "missing": [],
+  "clashes": {},
+  "open flags": [],
+  "complete": true
+ },
+ "de": {
+  "kept in English": [
+   "ABS",
+   "ASC",
+   "BAHTTEXT",
+   "BESSELI",
+   "BESSELJ",
+   "BESSELK",
+   "BESSELY",
+   "BETA.INV",
+   "BETAINV",
+   "BINOM.INV",
+   "BYCOL",
+   "BYROW",
+   "CHIINV",
+   "CHITEST",
+   "CODE",
+   "COS",
+   "COT",
+   "DATEDIF",
+   "DBCS",
+   "DELTA",
+   "DOLLAR",
+   "DURATION",
+   "EXP",
+   "F.INV",
+   "F.TEST",
+   "FILTER",
+   "FIND",
+   "FINDB",
+   "FINV",
+   "FISHER",
+   "FISHERINV",
+   "FTEST",
+   "GAMMA",
+   "GAMMA.INV",
+   "GAMMAINV",
+   "GAMMALN",
+   "GAUSS",
+   "HYPERLINK",
+   "IMABS",
+   "IMARGUMENT",
+   "IMCOS",
+   "IMCOT",
+   "IMDIV",
+   "IMEXP",
+   "IMLN",
+   "IMLOG10",
+   "IMLOG2",
+   "IMSEC",
+   "IMSIN",
+   "IMSUB",
+   "IMTAN",
+   "INDEX",
+   "ISPMT",
+   "KURT",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "LOGINV",
+   "LOGNORM.INV",
+   "MAKEARRAY",
+   "MAX",
+   "MAXA",
+   "MDURATION",
+   "MEDIAN",
+   "MIN",
+   "MINA",
+   "MINUTE",
+   "MMULT",
+   "NOMINAL",
+   "NORM.INV",
+   "NORM.S.INV",
+   "NORMINV",
+   "PDURATION",
+   "PEARSON",
+   "PHI",
+   "PI",
+   "POISSON",
+   "QUARTILE",
+   "QUOTIENT",
+   "REDUCE",
+   "REGEXEXTRACT",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "SCAN",
+   "SEC",
+   "SIN",
+   "T.INV",
+   "T.TEST",
+   "TAN",
+   "TEXT",
+   "TINV",
+   "TREND",
+   "TTEST",
+   "UNICODE",
+   "VAR.P",
+   "VAR.S",
+   "VDB",
+   "WEIBULL"
+  ],
+  "resolved": 491,
+  "wanted": 491,
+  "missing": [],
+  "clashes": {},
+  "open flags": [],
+  "complete": true
+ },
+ "it": {
+  "kept in English": [
+   "ASC",
+   "BASE",
+   "BITAND",
+   "BITOR",
+   "BITXOR",
+   "BYCOL",
+   "BYROW",
+   "CONCAT",
+   "COS",
+   "COSH",
+   "COT",
+   "COTH",
+   "COUNTBLANK",
+   "CSC",
+   "CSCH",
+   "DBCS",
+   "DELTA",
+   "DROP",
+   "FISHER",
+   "GAMMA",
+   "GAUSS",
+   "GROUPBY",
+   "IMAGE",
+   "INT",
+   "LAMBDA",
+   "LET",
+   "LN",
+   "LOG",
+   "LOG10",
+   "MAKEARRAY",
+   "MAP",
+   "MAX",
+   "MIN",
+   "PEARSON",
+   "PERCENTILE",
+   "PERCENTOF",
+   "PHI",
+   "POISSON",
+   "QUARTILE",
+   "REDUCE",
+   "REGEXEXTRACT",
+   "REGEXREPLACE",
+   "REGEXTEST",
+   "SCAN",
+   "SECH",
+   "SORT",
+   "SWITCH",
+   "TAKE",
+   "TAN",
+   "TANH",
+   "TEXTAFTER",
+   "TEXTBEFORE",
+   "TOROW",
+   "UNICODE",
+   "VALUETOTEXT",
+   "VAR",
+   "VAR.P",
+   "WEIBULL",
+   "WRAPCOLS",
+   "WRAPROWS",
+   "XOR"
+  ],
+  "resolved": 487,
+  "wanted": 491,
+  "missing": [
+   "BINOM.DIST.RANGE",
+   "FIND",
+   "FINDB",
+   "IFNA"
+  ],
+  "clashes": {
+   "PI.GRECO": [
+    "PI",
+    "SEC"
+   ]
+  },
+  "open flags": [
+   {
+    "name": "FIND",
+    "href": "/en-us/topic/c7912941-af2a-4bdf-a553-d0d89b0a0628",
+    "why": "unresolved",
+    "local syntax": [],
+    "local article": []
+   },
+   {
+    "name": "AND",
+    "href": "functions/and-function",
+    "why": "first name in the article",
+    "chosen": "E",
+    "local": [
+     "E",
+     "SE",
+     "IF",
+     "AND"
+    ]
+   },
+   {
+    "name": "BINOM.DIST.RANGE",
+    "href": "functions/binom-dist-range-function",
+    "why": "unresolved",
+    "local syntax": [],
+    "local article": []
+   },
+   {
+    "name": "CONCATENATE",
+    "href": "functions/concatenate-function",
+    "why": "taken from the article order",
+    "chosen": "CONCATENA",
+    "local": [
+     "CONCATENA",
+     "TESTO"
+    ]
+   },
+   {
+    "name": "COS",
+    "href": "functions/cos-function",
+    "why": "syntax kept the English name",
+    "chosen": "COS",
+    "other names in the article": [
+     "PI.GRECO",
+     "RADIANTI"
+    ]
+   },
+   {
+    "name": "CSC",
+    "href": "functions/csc-function",
+    "why": "syntax kept the English name",
+    "chosen": "CSC",
+    "other names in the article": [
+     "SEN"
+    ]
+   },
+   {
+    "name": "DATE",
+    "href": "functions/date-function",
+    "why": "taken from the article order",
+    "chosen": "DATA",
+    "local": [
+     "DATA",
+     "ANNO",
+     "MESE",
+     "GIORNO",
+     "SINISTRA",
+     "STRINGA.ESTRAI",
+     "DESTRA"
+    ]
+   },
+   {
+    "name": "EXPAND",
+    "href": "functions/expand-function",
+    "why": "taken from the article order",
+    "chosen": "ESPANDI",
+    "local": [
+     "ESPANDI"
+    ]
+   },
+   {
+    "name": "GAUSS",
+    "href": "functions/gauss-function",
+    "why": "syntax kept the English name",
+    "chosen": "GAUSS",
+    "other names in the article": [
+     "DISTRIB.NORM.ST.N"
+    ]
+   },
+   {
+    "name": "IFNA",
+    "href": "functions/ifna-function",
+    "why": "unresolved",
+    "local syntax": [],
+    "local article": []
+   },
+   {
+    "name": "IFS",
+    "href": "functions/ifs-function",
+    "why": "taken from the article order",
+    "chosen": "PIÙ.SE",
+    "local": [
+     "PIÙ.SE",
+     "SE"
+    ]
+   },
+   {
+    "name": "LAMBDA",
+    "href": "functions/lambda-function",
+    "why": "syntax kept the English name",
+    "chosen": "LAMBDA",
+    "other names in the article": [
+     "TESTO",
+     "DATA",
+     "SCEGLI",
+     "GIORNO.SETTIMANA",
+     "DATADELRINGRAZIAMENTO"
+    ]
+   },
+   {
+    "name": "LET",
+    "href": "functions/let-function",
+    "why": "syntax kept the English name",
+    "chosen": "LET",
+    "other names in the article": [
+     "SOMMA",
+     "SE",
+     "VAL.VUOTO",
+     "FILTRO"
+    ]
+   },
+   {
+    "name": "MAP",
+    "href": "functions/map-function",
+    "why": "syntax kept the English name",
+    "chosen": "MAP",
+    "other names in the article": [
+     "FILTRO"
+    ]
+   },
+   {
+    "name": "NOT",
+    "href": "functions/not-function",
+    "why": "first name in the article",
+    "chosen": "NON",
+    "local": [
+     "NON",
+     "NOT",
+     "SE",
+     "E",
+     "O"
+    ]
+   },
+   {
+    "name": "OR",
+    "href": "functions/or-function",
+    "why": "taken from the article order",
+    "chosen": "O",
+    "local": [
+     "O",
+     "SE"
+    ]
+   },
+   {
+    "name": "PEARSON",
+    "href": "functions/pearson-function",
+    "why": "syntax kept the English name",
+    "chosen": "PEARSON",
+    "other names in the article": [
+     "MEDIA"
+    ]
+   },
+   {
+    "name": "PERCENTILE",
+    "href": "functions/percentile-function",
+    "why": "syntax kept the English name",
+    "chosen": "PERCENTILE",
+    "other names in the article": [
+     "ESC.PERCENTILE",
+     "INC.PERCENTILE"
+    ]
+   },
+   {
+    "name": "QUARTILE",
+    "href": "functions/quartile-function",
+    "why": "syntax kept the English name",
+    "chosen": "QUARTILE",
+    "other names in the article": [
+     "ESC.QUARTILE",
+     "INC.QUARTILE"
+    ]
+   },
+   {
+    "name": "SEC",
+    "href": "functions/sec-function",
+    "why": "first name in the article",
+    "chosen": "PI.GRECO",
+    "local": [
+     "PI.GRECO"
+    ]
+   },
+   {
+    "name": "SECH",
+    "href": "functions/sech-function",
+    "why": "syntax kept the English name",
+    "chosen": "SECH",
+    "other names in the article": [
+     "PI.GRECO"
+    ]
+   },
+   {
+    "name": "SORT",
+    "href": "functions/sort-function",
+    "why": "syntax kept the English name",
+    "chosen": "SORT",
+    "other names in the article": [
+     "DATI.ORDINA"
+    ]
+   },
+   {
+    "name": "SWITCH",
+    "href": "functions/switch-function",
+    "why": "taken from the article order",
+    "chosen": "SWITCH",
+    "local": [
+     "SWITCH",
+     "GIORNO.SETTIMANA"
+    ]
+   },
+   {
+    "name": "TAN",
+    "href": "functions/tan-function",
+    "why": "syntax kept the English name",
+    "chosen": "TAN",
+    "other names in the article": [
+     "PI.GRECO",
+     "RADIANTI"
+    ]
+   },
+   {
+    "name": "TEXT",
+    "href": "functions/text-function",
+    "why": "first name in the article",
+    "chosen": "TESTO",
+    "local": [
+     "TESTO",
+     "OGGI",
+     "ADESSO",
+     "TEXT",
+     "ANNULLA.SPAZI",
+     "MAIUSC",
+     "CAR",
+     "CODICE.CARATT"
+    ]
+   },
+   {
+    "name": "TEXTAFTER",
+    "href": "functions/textafter-function",
+    "why": "syntax kept the English name",
+    "chosen": "TEXTAFTER",
+    "other names in the article": [
+     "TESTO.DOPO",
+     "TSTO.DOPO",
+     "SE"
+    ]
+   },
+   {
+    "name": "TEXTBEFORE",
+    "href": "functions/textbefore-function",
+    "why": "syntax kept the English name",
+    "chosen": "TEXTBEFORE",
+    "other names in the article": [
+     "TESTO.PRIMA",
+     "TESTO.DOPO",
+     "TESTO.PRECEDENTE"
+    ]
+   },
+   {
+    "name": "VAR",
+    "href": "functions/var-function",
+    "why": "syntax kept the English name",
+    "chosen": "VAR",
+    "other names in the article": [
+     "MEDIA",
+     "VAR.VALORI"
+    ]
+   },
+   {
+    "name": "VAR.P",
+    "href": "functions/var-p-function",
+    "why": "syntax kept the English name",
+    "chosen": "VAR.P",
+    "other names in the article": [
+     "MEDIA",
+     "VAR.C"
+    ]
+   },
+   {
+    "name": "VLOOKUP",
+    "href": "functions/vlookup-function",
+    "why": "taken from the article order",
+    "chosen": "CERCA.VERT",
+    "local": [
+     "CERCA.VERT"
+    ]
+   },
+   {
+    "name": "FORECAST.LINEAR",
+    "href": "forecasting-functions-reference",
+    "why": "named in other articles",
+    "chosen": "PREVISIONE.LINEARE",
+    "articles": [
+     "forecast-and-forecast-linear-functions"
+    ]
+   },
+   {
+    "name": "CEILING.MATH",
+    "href": "functions/ceiling-math-function",
+    "why": "the examples use another name",
+    "chosen": "MATH",
+    "examples": [
+     "ARROTONDA.ECCESSO.MAT"
+    ],
+    "unexplained": [
+     "ARROTONDA.ECCESSO.MAT"
+    ]
+   },
+   {
+    "name": "CHISQ.DIST.RT",
+    "href": "functions/chisq-dist-rt-function",
+    "why": "the examples use another name",
+    "chosen": "DISTRIB.CHI.QUAD.DS",
+    "examples": [
+     "DISTRIB.CHIQUAD.DS"
+    ],
+    "unexplained": [
+     "DISTRIB.CHIQUAD.DS"
+    ]
+   },
+   {
+    "name": "COLUMN",
+    "href": "functions/column-function",
+    "why": "the examples use another name",
+    "chosen": "RIF.COLONNA",
+    "examples": [
+     "COLONNA"
+    ],
+    "unexplained": [
+     "COLONNA"
+    ]
+   },
+   {
+    "name": "PMT",
+    "href": "functions/pmt-function",
+    "why": "the examples use another name",
+    "chosen": "PAGAM",
+    "examples": [
+     "RATA"
+    ],
+    "unexplained": [
+     "RATA"
+    ]
+   },
+   {
+    "name": "PV",
+    "href": "functions/pv-function",
+    "why": "the examples use another name",
+    "chosen": "VALATT",
+    "examples": [
+     "VA"
+    ],
+    "unexplained": [
+     "VA"
+    ]
+   },
+   {
+    "name": "ISERR",
+    "why": "keeps the English stem",
+    "chosen": "VAL.ERR"
+   },
+   {
+    "name": "ISERROR",
+    "why": "keeps the English stem",
+    "chosen": "VAL.ERRORE"
+   },
+   {
+    "name": "ISFORMULA",
+    "why": "keeps the English stem",
+    "chosen": "VAL.FORMULA"
+   },
+   {
+    "name": "PERCENTILE.EXC",
+    "why": "a fragment of the English name",
+    "chosen": "EXC"
+   },
+   {
+    "name": "AGGREGATE",
+    "href": "functions/aggregate-function",
+    "why": "the localized index names it differently",
+    "chosen": "AGGREGA",
+    "index": "AGGREGAZIONE"
+   },
+   {
+    "name": "BYCOL",
+    "href": "functions/bycol-function",
+    "why": "the localized index names it differently",
+    "chosen": "BYCOL",
+    "index": "PERCOL"
+   },
+   {
+    "name": "BYROW",
+    "href": "functions/byrow-function",
+    "why": "the localized index names it differently",
+    "chosen": "BYROW",
+    "index": "PERRIGA"
+   },
+   {
+    "name": "DROP",
+    "href": "functions/drop-function",
+    "why": "the localized index names it differently",
+    "chosen": "DROP",
+    "index": "ESCLUDI"
+   },
+   {
+    "name": "FACT",
+    "href": "functions/fact-function",
+    "why": "the localized index names it differently",
+    "chosen": "FATTORIALE",
+    "index": "FATTO"
+   },
+   {
+    "name": "FIXED",
+    "href": "functions/fixed-function",
+    "why": "the localized index names it differently",
+    "chosen": "FISSO",
+    "index": "RISOLTO"
+   },
+   {
+    "name": "FORMULATEXT",
+    "href": "functions/formulatext-function",
+    "why": "the localized index names it differently",
+    "chosen": "TESTO.FORMULA",
+    "index": "TESTOFORMULA"
+   },
+   {
+    "name": "HYPGEOMDIST",
+    "href": "functions/hypgeomdist-function",
+    "why": "the localized index names it differently",
+    "chosen": "DISTRIB.IPERGEOM",
+    "index": "DISTRIB.HYPGEOMDIST"
+   },
+   {
+    "name": "IMAGE",
+    "href": "functions/image-function",
+    "why": "the localized index names it differently",
+    "chosen": "IMAGE",
+    "index": "IMMAGINE"
+   },
+   {
+    "name": "MATCH",
+    "href": "functions/match-function",
+    "why": "the localized index names it differently",
+    "chosen": "CONFRONTA",
+    "index": "PARTITA"
+   },
+   {
+    "name": "NUMBERVALUE",
+    "href": "functions/numbervalue-function",
+    "why": "the localized index names it differently",
+    "chosen": "NUMERO.VALORE",
+    "index": "NUMEROVALORE"
+   },
+   {
+    "name": "PHI",
+    "href": "functions/phi-function",
+    "why": "the localized index names it differently",
+    "chosen": "PHI",
+    "index": "FI"
+   },
+   {
+    "name": "ROW",
+    "href": "functions/row-function",
+    "why": "the localized index names it differently",
+    "chosen": "RIF.RIGA",
+    "index": "RIGA"
+   },
+   {
+    "name": "SHEET",
+    "href": "functions/sheet-function",
+    "why": "the localized index names it differently",
+    "chosen": "FOGLIO",
+    "index": "SCHEDA"
+   },
+   {
+    "name": "SUMPRODUCT",
+    "href": "functions/sumproduct-function",
+    "why": "the localized index names it differently",
+    "chosen": "SOMMA.PRODOTTO",
+    "index": "MATR.SOMMA.PRODOTTO"
+   },
+   {
+    "name": "TAKE",
+    "href": "functions/take-function",
+    "why": "the localized index names it differently",
+    "chosen": "TAKE",
+    "index": "INCLUDI"
+   },
+   {
+    "name": "TOROW",
+    "href": "functions/torow-function",
+    "why": "the localized index names it differently",
+    "chosen": "TOROW",
+    "index": "A.RIGA"
+   },
+   {
+    "name": "TRANSPOSE",
+    "href": "functions/transpose-function",
+    "why": "the localized index names it differently",
+    "chosen": "MATR.TRASPOSTA",
+    "index": "TRASPONI"
+   },
+   {
+    "name": "TYPE",
+    "href": "functions/type-function",
+    "why": "the localized index names it differently",
+    "chosen": "TIPO",
+    "index": "TIPOLOGIA"
+   },
+   {
+    "name": "VALUETOTEXT",
+    "href": "functions/valuetotext-function",
+    "why": "the localized index names it differently",
+    "chosen": "VALUETOTEXT",
+    "index": "VALORE.A.TESTO"
+   },
+   {
+    "name": "WRAPCOLS",
+    "href": "functions/wrapcols-function",
+    "why": "the localized index names it differently",
+    "chosen": "WRAPCOLS",
+    "index": "A.CAPO.COL"
+   },
+   {
+    "name": "WRAPROWS",
+    "href": "functions/wraprows-function",
+    "why": "the localized index names it differently",
+    "chosen": "WRAPROWS",
+    "index": "A.CAPO.RIGA"
+   }
+  ],
+  "complete": false
+ }
+}

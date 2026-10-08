@@ -13,6 +13,7 @@ import {
 import { useAuthedContext } from '@/components/session/ZekkeProvider';
 import { Button, CopyButton, Field, SecretField, Select } from '@/components/ui';
 import { FormModal } from '@/components/modal';
+import { regionalDate } from '@/lib/regional';
 
 interface Draft {
   site: string;
@@ -176,7 +177,7 @@ export default function PasswordFormModal({
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
                       <span className="text-caption normal-case tracking-normal text-ink-muted">
-                        {new Date(entry.changedAt).toLocaleDateString()}
+                        {regionalDate(new Date(entry.changedAt))}
                       </span>
                       <CopyButton value={entry.password} label="Copy" />
                     </span>

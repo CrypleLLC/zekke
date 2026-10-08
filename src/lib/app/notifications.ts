@@ -1,5 +1,6 @@
 import { isKnownKind, type NotificationRecord } from '@/lib/notifications';
 import { formatBytes } from './vault';
+import { regionalDate } from '@/lib/regional';
 
 export type NotificationTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -46,7 +47,7 @@ export function notificationDate(at: unknown): string | undefined {
   if (Number.isNaN(moment.getTime())) {
     return undefined;
   }
-  return moment.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return regionalDate(moment);
 }
 
 export function notificationAge(at: string, now: Date = new Date()): string {

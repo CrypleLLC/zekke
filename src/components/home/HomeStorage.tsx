@@ -13,6 +13,7 @@ import {
   usedShareLabel,
 } from '@/lib/app';
 import { useAuthedContext } from '@/components/session/ZekkeProvider';
+import { regionalCount } from '@/lib/regional';
 
 export default function HomeStorage() {
   const context = useAuthedContext();
@@ -75,7 +76,7 @@ export default function HomeStorage() {
         />
         <StorageFact
           label="Files"
-          value={files === undefined ? '…' : files.toLocaleString()}
+          value={files === undefined ? '…' : regionalCount(files)}
           detail={files === 1 ? 'file in the drive' : 'files in the drive'}
         />
       </dl>

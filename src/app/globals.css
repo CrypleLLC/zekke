@@ -1234,3 +1234,58 @@ body {
     color: inherit;
   }
 }
+
+.zekke-print-paper {
+  zoom: var(--print-zoom, 1);
+}
+
+@media print {
+  html:has(body > .zekke-sheet-print),
+  body:has(> .zekke-sheet-print) {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  body:has(> .zekke-sheet-print) > :not(.zekke-sheet-print) {
+    display: none !important;
+  }
+
+  .zekke-sheet-print {
+    position: static !important;
+    display: block !important;
+    background: none !important;
+  }
+
+  .zekke-print-scroller {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .zekke-print-stack {
+    display: block !important;
+  }
+
+  .zekke-print-paper {
+    zoom: 1;
+    width: var(--print-content-w) !important;
+    height: calc(var(--print-content-h) - 0.5mm) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden;
+    break-after: page;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .zekke-print-paper:last-child {
+    break-after: auto;
+  }
+}
+
+.zekke-sheet-host [data-u-comp="ribbon-header-menu"] {
+  display: none;
+}

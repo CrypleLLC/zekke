@@ -6,6 +6,7 @@ import {
   type IDisposable,
   type Univer,
   type Workbook,
+  type Worksheet,
 } from '@univerjs/core';
 import { IRenderManagerService, type IRender, type Viewport } from '@univerjs/engine-render';
 import { SheetsSelectionsService } from '@univerjs/sheets';
@@ -30,6 +31,20 @@ export interface SheetView {
   scaleY: number;
   clip: ScreenRect;
   toScreen(rect: ContentRect): ScreenRect;
+}
+
+export function chartValues(worksheet: Worksheet, range: GridRange): ChartValue[][] {
+  const endRow = Math.min(range.endRow, range.startRow + CHART_MAX_ROWS - 1);
+  const grid: ChartValue[][] = [];
+  for (let row = range.startRow; row <= endRow; row += 1) {
+    const line: ChartValue[] = [];
+    for (let column = range.startColumn; column <= range.endColumn; column += 1) {
+      const value = worksheet.getCellRaw(row, column)?.v;
+      line.push(typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean' ? value : null);
+    }
+    grid.push(line);
+  }
+  return grid;
 }
 
 function pixels(value: string): number {
@@ -80,20 +95,7 @@ export class ChartViewSource {
 
   values(sheetId: string, range: GridRange): ChartValue[][] {
     const worksheet = this.workbook()?.getSheetBySheetId(sheetId);
-    if (worksheet === undefined || worksheet === null) {
-      return [];
-    }
-    const endRow = Math.min(range.endRow, range.startRow + CHART_MAX_ROWS - 1);
-    const grid: ChartValue[][] = [];
-    for (let row = range.startRow; row <= endRow; row += 1) {
-      const line: ChartValue[] = [];
-      for (let column = range.startColumn; column <= range.endColumn; column += 1) {
-        const value = worksheet.getCellRaw(row, column)?.v;
-        line.push(typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean' ? value : null);
-      }
-      grid.push(line);
-    }
-    return grid;
+    return worksheet === undefined || worksheet === null ? [] : chartValues(worksheet, range);
   }
 
   read(layer: HTMLElement): SheetView | undefined {
