@@ -9,6 +9,7 @@ the sidebar; they open from the account menu ([`components/shell`](../shell/READ
 | `UsernameScreen.tsx` | The **Username** tab — one panel, `UsernameCard` |
 | `UsernameCard.tsx` | The rename panel: the current name, the claim, and what a rename does |
 | `PinScreen.tsx` | The **PIN** tab — this browser's PIN, turning Paranoid on, changing the account PIN. Each PIN hands focus to the next, and the last one submits, except when turning Paranoid on ([`lib/app`](../../lib/app/README.md#one-box-per-digit--pin-entryts)) |
+| `RegionScreen.tsx` | The **Region** tab — the account's country, date, time and number formats, units and paper ([`lib/regional`](../../lib/regional/README.md)) |
 | `DevicesScreen.tsx` | The **Devices** tab — the account's devices, names, chain verification, removing another device with the phrase |
 | `ConnectExtension.tsx` | Inside the Devices tab: linking the browser extension — the code and its countdown, the fingerprint to compare, the device's name, and refusing on a mismatch ([`lib/pairing`](../../lib/pairing/README.md)) |
 | `AccountScreen.tsx` | The **Account** tab — deleting the account with the phrase (and the account PIN on Paranoid) |
@@ -19,8 +20,8 @@ The **Sharing** tab is drawn by `SharingScreen`, which lives with the rest of sh
 
 ## Settings is a modal with tabs
 
-**Settings is a modal with tabs**, `SETTINGS_TABS` in `lib/app/settings.ts`. Sharing, Username and
-Devices, Username, PIN and Account are the tabs (Sharing only on a device holding `sharing`), and it takes the `wide` variant to give them room. None of them is a place you
+**Settings is a modal with tabs**, `SETTINGS_TABS` in `lib/app/settings.ts`. Sharing, Devices, Username,
+PIN, Region, Plan and Account are the tabs (Sharing only on a device holding `sharing`, Region only on one holding `documents`, the scope its sealed record is under), and it takes the `wide` variant to give them room. None of them is a place you
 keep things, so none earned a permanent seat in the sidebar.
 
 **The tabs are a vertical menu down the left edge of the modal, not a row across the top.** The
@@ -50,6 +51,17 @@ you act on from the header — it changes in exactly one place, through a delibe
 once. The PIN tab says *PIN protection is on* when it is, and offers the upgrade when it is not,
 which is the same fact in words that mean something and a control next to it. `AccountMenu` no
 longer takes a `paranoid` prop at all, rather than taking one it ignores.
+
+## Region: the account's formats, and the defaults for what comes next
+
+The **Region** tab is the account-level half of the regional settings: a country, and the date,
+time and number formats, units and paper it implies, each changeable on its own. They are what the
+app draws every date, time and count with, what the document rulers and print use, and **what a new
+spreadsheet starts with**. Currency and the language of function names are not here: they belong to
+a spreadsheet, in its own **Settings** menu ([`components/spreadsheets`](../spreadsheets/README.md#the-screen)),
+and changing the account never changes a spreadsheet that already has its own. The tab needs
+`documents` because the record is sealed under that scope's key
+([`lib/preferences`](../../lib/preferences/README.md)).
 
 ## The username panel is its own Settings tab
 

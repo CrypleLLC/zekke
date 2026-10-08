@@ -28,7 +28,7 @@ import {
   type PrintCell,
   type SheetMap,
 } from './index';
-import { defaultPaperFor, paperPageRule, pixelsFromMillimetres } from '@/lib/document-page';
+import { paperPageRule, pixelsFromMillimetres } from '@/lib/document-page';
 
 function workbook(): { doc: Y.Doc; sheet: SheetMap } {
   const doc = new Y.Doc();
@@ -63,13 +63,10 @@ function grid(rows: number, columns: number, rowSize = 20, columnSize = 100): Pr
 }
 
 describe('the page setup in the CRDT', () => {
-  it('defaults when nothing is stored, with the paper of the locale', () => {
+  it('defaults when nothing is stored, on the paper the person prefers', () => {
     const { sheet } = workbook();
     expect(readPageSetup(sheet, 'letter')).toEqual(defaultPageSetup('letter'));
-    expect(defaultPaperFor('en-US')).toBe('letter');
-    expect(defaultPaperFor('pt-BR')).toBe('a4');
-    expect(defaultPaperFor('en')).toBe('a4');
-    expect(defaultPaperFor(undefined)).toBe('a4');
+    expect(readPageSetup(sheet, 'a4')).toEqual(defaultPageSetup('a4'));
   });
 
   it('round-trips, and replaces each unreadable field with its default', () => {

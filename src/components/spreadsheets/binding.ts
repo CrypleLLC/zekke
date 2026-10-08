@@ -11,6 +11,7 @@ import {
 import * as Y from 'yjs';
 import {
   FORMULA_CODEC,
+  WorkbookIndex,
   META_MAP,
   NAMES,
   SHEETS,
@@ -19,13 +20,15 @@ import {
   readAxis,
   readSheet,
   type CapacityRefusal,
+  type BoundFeature,
   type Dimension,
   type FormulaCodec,
   type Operation,
   type SheetMap,
 } from '@/lib/spreadsheets';
 import { CapacityGauge, mutationGrowth } from './capacity';
-import { applyChanges, reconcileNames, type ApplyContext } from './apply';
+import { applyChanges, reconcileAllFeatures, reconcileNames, type ApplyContext } from './apply';
+import { FeatureModels, captureFeature, featureOfMutation } from './features';
 import { MutationCapture } from './capture';
 import { collectChanges, emptyChanges, hasChanges, type Changes } from './changes';
 import { WorkbookMirror } from './mirror';
@@ -56,6 +59,8 @@ export class SpreadsheetBinding {
   private readonly mirror: WorkbookMirror;
   private readonly codec: FormulaCodec;
   private readonly capture: MutationCapture;
+  private readonly features: FeatureModels;
+  private readonly dirtyFeatures = new Map<string, Set<BoundFeature>>();
   private readonly unboundCounts = new Map<string, number>();
   private readonly disposers: (() => void)[] = [];
   private pending: Operation[] = [];
@@ -71,6 +76,7 @@ export class SpreadsheetBinding {
     this.surface = new UniverSurface(univer, unitId);
     this.mirror = WorkbookMirror.fromDoc(doc);
     this.capacity = new CapacityGauge(doc, options.capacityLimitBytes);
+    this.features = new FeatureModels(univer, this.surface);
     this.capture = new MutationCapture({
       surface: this.surface,
       mirror: this.mirror,
@@ -95,7 +101,10 @@ export class SpreadsheetBinding {
       () => this.capacity.dispose(),
     );
 
-    this.withApplying(() => reconcileNames(this.applyContext()));
+    this.withApplying(() => {
+      reconcileNames(this.applyContext());
+      reconcileAllFeatures(this.applyContext());
+    });
     this.surface.clearUniverHistory();
   }
 
@@ -176,7 +185,13 @@ export class SpreadsheetBinding {
   }
 
   private applyContext(): ApplyContext {
-    return { doc: this.options.doc, surface: this.surface, mirror: this.mirror, codec: this.codec };
+    return {
+      doc: this.options.doc,
+      surface: this.surface,
+      mirror: this.mirror,
+      codec: this.codec,
+      features: this.features,
+    };
   }
 
   private withApplying(work: () => void): void {
@@ -239,13 +254,19 @@ export class SpreadsheetBinding {
     if (info.type !== CommandType.MUTATION || executionOptions?.onlyLocal || executionOptions?.fromCollab) {
       return;
     }
-    const result = this.capture.capture(info.id, (info.params ?? {}) as Record<string, unknown>);
-    if ('unbound' in result) {
-      this.unboundCounts.set(info.id, (this.unboundCounts.get(info.id) ?? 0) + 1);
-      return;
-    }
-    if ('operations' in result) {
-      this.pending.push(...result.operations);
+    const params = (info.params ?? {}) as Record<string, unknown>;
+    const feature = featureOfMutation(info.id);
+    if (feature !== undefined) {
+      this.markFeature(params, feature);
+    } else {
+      const result = this.capture.capture(info.id, params);
+      if ('unbound' in result) {
+        this.unboundCounts.set(info.id, (this.unboundCounts.get(info.id) ?? 0) + 1);
+        return;
+      }
+      if ('operations' in result) {
+        this.pending.push(...result.operations);
+      }
     }
     if (this.commandDepth === 0) {
       this.flush();
@@ -254,13 +275,37 @@ export class SpreadsheetBinding {
     }
   }
 
+  private markFeature(params: Record<string, unknown>, feature: BoundFeature): void {
+    if (params.unitId !== this.surface.unitId || typeof params.subUnitId !== 'string') {
+      return;
+    }
+    const features = this.dirtyFeatures.get(params.subUnitId) ?? new Set<BoundFeature>();
+    features.add(feature);
+    this.dirtyFeatures.set(params.subUnitId, features);
+  }
+
+  private featureOperations(): Operation[] {
+    if (this.dirtyFeatures.size === 0) {
+      return [];
+    }
+    const dirty = [...this.dirtyFeatures];
+    this.dirtyFeatures.clear();
+    const workbook = new WorkbookIndex(this.options.doc);
+    return dirty.flatMap(([sheetId, features]) =>
+      [...features].flatMap((feature) =>
+        captureFeature(this.features, this.options.doc, sheetId, feature, workbook, this.codec),
+      ),
+    );
+  }
+
   private flush(): void {
-    if (this.pending.length === 0) {
+    if (this.pending.length === 0 && this.dirtyFeatures.size === 0) {
       return;
     }
     const operations = this.pending;
     this.pending = [];
     applyOperations(this.options.doc, operations, CAPTURE_ORIGIN);
+    applyOperations(this.options.doc, this.featureOperations(), CAPTURE_ORIGIN);
   }
 
   private onTransaction(transaction: Y.Transaction): void {

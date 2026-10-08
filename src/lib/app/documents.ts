@@ -3,6 +3,7 @@ import type { FirstPage, SyncStatus } from "@/lib/documents";
 import { cellsInBytes, type CapacityRefusal } from "@/lib/spreadsheets/capacity";
 import { daysLabel } from "./trash";
 import { countOf, DOCUMENT_NOUNS, SPREADSHEET_NOUNS, type FolderNouns } from "./folders";
+import { regionalCount, regionalDate, regionalShortDate } from '@/lib/regional';
 
 export const UNTITLED_DOCUMENT = "Untitled document";
 export const UNTITLED_SPREADSHEET = "Untitled spreadsheet";
@@ -115,11 +116,7 @@ export function editedLabel(updatedAt: string, now: Date = new Date()): string {
     return `Edited ${hours} hour${hours === 1 ? "" : "s"} ago`;
   }
 
-  return `Edited ${at.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: at.getFullYear() === now.getFullYear() ? undefined : "numeric",
-  })}`;
+  return `Edited ${at.getFullYear() === now.getFullYear() ? regionalShortDate(at) : regionalDate(at)}`;
 }
 
 export interface DocumentTile {
@@ -252,7 +249,7 @@ export function capacityRefusalMessage(refusal: CapacityRefusal): string {
   const asked = cellsInBytes(refusal.addedBytes);
   return fits === 0
     ? "This spreadsheet is full: nothing more can be added. Remove content, or start a new spreadsheet."
-    : `This spreadsheet has room for about ${fits.toLocaleString()} more cells, and that change needs about ${asked.toLocaleString()}. Nothing was changed.`;
+    : `This spreadsheet has room for about ${regionalCount(fits)} more cells, and that change needs about ${regionalCount(asked)}. Nothing was changed.`;
 }
 
 export function snapshotCapacityMessage(capacity: SnapshotCapacity): string | undefined {
@@ -271,7 +268,7 @@ export function documentCountsLabel(
   characters: number,
   pages?: number,
 ): string {
-  const text = `${words.toLocaleString()} ${words === 1 ? "word" : "words"} · ${characters.toLocaleString()} ${
+  const text = `${regionalCount(words)} ${words === 1 ? "word" : "words"} · ${regionalCount(characters)} ${
     characters === 1 ? "character" : "characters"
   }`;
   if (pages === undefined) {

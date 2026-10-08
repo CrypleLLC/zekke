@@ -101,6 +101,8 @@ describe('rendering margins', () => {
     expect(marginLabel(30)).toBe('3 cm');
     expect(marginLabel(32.5)).toBe('3.25 cm');
     expect(marginLabel(25.4)).toBe('2.54 cm');
+    expect(marginLabel(25.4, 'imperial')).toBe('1 in');
+    expect(marginLabel(19.1, 'imperial')).toBe('0.75 in');
   });
 
   it('writes the CSS properties the page reads', () => {

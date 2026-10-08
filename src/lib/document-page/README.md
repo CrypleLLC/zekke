@@ -15,11 +15,11 @@ the rulers and the sheet from it.
 | `maxMargin`, `MIN_TEXT_MM` | How far a side can go: the page, less 5 cm of text, less the opposite side |
 | `snapMargin`, `MARGIN_STEP_MM`, `MARGIN_FINE_STEP_MM`, `MARGIN_LARGE_STEP_MM` | 2.5 mm by default, 0.5 mm fine, 1 cm large |
 | `millimetresFromPixels(px)` | CSS pixels to millimetres, at CSS's fixed 96 px per inch |
-| `marginLabel(mm)`, `MARGIN_NAMES` | `30` → `3 cm`; the slider names |
+| `marginLabel(mm, system?)`, `MARGIN_NAMES` | `30` → `3 cm`, or `25.4` → `1 in` under `imperial`; the slider names |
+| `RULER_UNITS`, `RulerSystem` | Per measurement system, the ruler's unit and its snapping steps: 2.5 mm, 0.5 mm, 1 cm in metric; ¼ in, ⅛ in, 1 in in imperial |
 | `pageMarginVariables(margins)` | The `--doc-margin-*` properties the sheet reads |
 | `printPageRule(margins)` | The `@page` rule a print uses |
 | `PaperSize`, `PageOrientation`, `PAPER_SIZES` | A4 and Letter, in millimetres and as `@page` names |
-| `defaultPaperFor(locale)` | Letter where it is the norm (the Americas' Letter regions, the Philippines), A4 everywhere else |
 | `paperDimensions(paper, orientation)` | The page's width and height, turned for landscape |
 | `paperPageRule(paper, orientation, margins)` | The `@page` rule for a chosen paper — what a spreadsheet prints with |
 

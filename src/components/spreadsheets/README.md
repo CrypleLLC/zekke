@@ -12,7 +12,8 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 | File         | Role                                                                                   |
 | ------------ | -------------------------------------------------------------------------------------- |
 | `SpreadsheetsScreen.tsx` | The Spreadsheets tab: the documents screen on the spreadsheet shelf ([Two shelves, one domain](../documents/README.md#two-shelves-one-domain)) |
-| `SpreadsheetWorkspace.tsx` | The page: sync, the title and save status, the capacity notice, and the editor loaded on demand |
+| `SpreadsheetWorkspace.tsx` | The page: sync, the title and save status, the capacity notice, the rebuild offer, the notice of a rebuilt copy, and the editor loaded on demand |
+| `RebuildDialog.tsx` | What a rebuild would save and cost, and the rebuild itself |
 | `SpreadsheetEditor.tsx` | Univer in a container, the binding, undo and redo, and a refused write's message |
 | `univer.ts`  | `startSpreadsheetUniver`: which plugins, which locales, the theme, the hidden menu items |
 | `memory-storage.ts` | The storage service Univer is given instead of its IndexedDB one          |
@@ -24,6 +25,12 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 | `apply.ts`   | Changes → `fromCollab` Univer mutations                                                 |
 | `mirror.ts`  | `WorkbookMirror`, the ids in the order Univer shows them, and the axis and sheet plans |
 | `surface.ts` | `UniverSurface`, the few Univer services the binding reads and writes through           |
+| `features.ts` | `FeatureModels`, and the capture and reconciliation of filters, validation and conditional formatting |
+| `RegionalSettings.tsx` | The spreadsheet's **Settings** menu: its country and the formats it sets, its currency, and the language of its function names |
+| `useSheetRegional.ts` | The spreadsheet's own regional settings, read from its document and kept current, with the account's as the fallback |
+| `chart-menu.ts` | `registerChartMenu`: the Chart item in Univer's Insert section |
+| `ribbon-tabs.ts` | `RibbonTabsSource`: Univer's toolbar sections and the active one, for the tabs in the header |
+| `regional.ts` | `applyRegionalSyntax`: Univer's number locale, the editor's translation, general numbers, the preferred currency |
 | `capacity.ts` | `CapacityGauge` and what each mutation would add, for the capacity guard              |
 | `chart-view.ts` | `ChartViewSource`: the active sheet's lines, scroll, zoom and freeze read off Univer's renderer, the selection, and a range's values |
 | `useSheetCharts.ts` | The active sheet's charts with their values, and the view, redrawn once per frame when either changes |
@@ -37,6 +44,8 @@ The `Y.Doc` layout, the operations on it and the formula codec are
 
 The binding's modules hold no React and are tested in Node against a real, headless Univer 1.0.3
 (`binding.test.ts`), with two devices editing offline and then exchanging updates.
+`features.test.ts` does the same for filters, validation and conditional formatting, with their
+plugins loaded headless.
 
 ## The screen
 
@@ -45,14 +54,58 @@ The binding's modules hold no React and are tested in Node against a real, headl
 the snapshot's capacity — `near` as a warning, `over` as an error that explains editing still works
 but compaction has stopped. `SpreadsheetEditor` is a `next/dynamic` import with `ssr: false`, so
 **Univer is downloaded only on this route**: 1.59 MiB gzipped (6.08 MiB raw, 13 scripts and 3
-stylesheets) in the production build, against 2.9 MB for Univer's own preset.
+stylesheets) in the production build before 147.13, against 2.9 MB for Univer's own preset. The
+filter, validation and conditional formatting plugins added since have not been measured.
 
 **Which plugins** (`univer.ts`): docs, render engine, UI, docs UI, formula engine, sheets, sheets UI,
-number formats and their UI, formulas and their UI. **Not loaded**: the network plugin the preset
-adds (an HTTP service nothing here needs), and every plugin whose edits the binding does not carry
-yet (filters, data validation, conditional formatting — 147.13).
+number formats and their UI, formulas and their UI, and — since 147.13 — filters, data validation
+and conditional formatting with their UIs. **Not loaded**: the network plugin the preset adds (an
+HTTP service nothing here needs), the filter's worker plugin, the mobile UIs, and every plugin
+whose edits the binding does not carry (protection, range themes).
 
-**Insert chart**, **Print** and **Download** sit beside undo and redo; charts are under
+**A rebuild without the history** ([`lib/spreadsheets`](../../lib/spreadsheets/README.md#rebuilding-without-the-history))
+is offered in the capacity notice from 80 % of the ceiling, on a full device (it trashes the old
+item, which a full device signs). The dialog measures the saving first and says when a rebuild
+would barely help, then lists what it costs: a new item, unsaved edits on other devices lost, the old
+copy in the Trash for the account's retention (or gone, at zero days), the new copy unshared. On
+success the page moves to the new copy. **A copy that was rebuilt** says so above the grid, with a
+link to the new one; it can still be edited, but nothing reaches the new copy.
+
+**Settings** opens **this spreadsheet's** regional settings in a modal — its country and the date,
+time and number formats and currency it sets, each changeable alone, and the language of its
+function names. **They apply to this spreadsheet only**, and they are stored in it
+([`lib/spreadsheets`](../../lib/spreadsheets/README.md#regional-settings)): everyone who opens it
+reads and types it the same way, on every device, and a change is an edit like any other that
+reaches the other people in it. Choosing a country sets every format; *Use the formats of …* puts
+them back; *Use my account's formats* takes the account's again.
+
+The account's formats are in **Settings → Region**
+([`components/settings`](../settings/README.md#region-the-accounts-formats-and-the-defaults-for-what-comes-next)).
+A new or imported spreadsheet is stamped with them (and that country's currency and function
+language) when it is created, and keeps them whatever the account later says. A spreadsheet made
+before it had settings of its own follows the account until someone changes one. Units and paper
+stay the account's: printing starts from the account's paper.
+
+**The toolbar sits in the header, right after the spreadsheet's name**, as in documents, so the
+grid starts two rows higher: undo and redo, a divider, then Univer's toolbar sections — **Start**,
+**Insert**, **Formulas**, **Data**, **View** — and, at the right edge, **Print**, **Download** and
+**Settings**. Below a narrow width the row wraps. The editor owns the toolbar and
+renders it into a slot the workspace's header leaves for it (`toolbarSlot`, through a portal); the
+header is lifted above Univer's layers so the Download menu opens over the grid.
+
+**The section tabs are ours, the sections are Univer's.** `ribbon-tabs.ts` (`RibbonTabsSource`)
+reads Univer's `IRibbonService` — the sections, their localized titles and the active one, including
+contextual sections Univer shows and hides — and `setActivatedTab` switches them; Univer still draws
+each section's buttons in its own row. Univer's own tab row (`[data-u-comp="ribbon-header-menu"]`)
+is hidden by a rule in `globals.css` scoped to `.zekke-sheet-host`, the element Univer is mounted in.
+
+**Chart is an item of Univer's Insert section**, first in its media group (`chart-menu.ts`,
+`registerChartMenu`): an operation (`zekke.operation.insert-chart`) whose handler calls the editor's
+`insertChart` through a ref, so it always sees the current view; the icon is ours, registered with
+Univer's `IconManager` through a wrapper that passes only `className`. Univer shows a toolbar
+button's name only in its grid layout, so like the section's other items it is an icon whose
+tooltip reads *Chart*. All three registrations are undone when the editor restarts.
+Charts are under
 [Charts](#charts), printing under [Printing](#printing).
 **Download** gives the whole workbook as `.xlsx`, or the sheet in view as
 CSV or TSV, built from Univer's snapshot so formulas carry their computed values, and saved
@@ -91,7 +144,11 @@ Univer runs in a tab full of plaintext, under the policy in
   renaming a sheet — made no request but the page's own files, and raised no violation.
   - The only network calls in the loaded packages are two `fetch` in `@univerjs/drawing`'s URL
     image service, which only `UniverDrawingPlugin` registers, and a `Worker` in `@univerjs/rpc`,
-    which only its plugin starts. Neither plugin is loaded.
+    which only its plugin starts. Neither plugin is loaded. The filter imports a controller from
+    `@univerjs/rpc` only as an optional dependency, which nothing provides.
+  - **The three feature packages add nothing to the list** (reviewed 2026-10-07, all Apache-2.0,
+    1.0.3): no request, worker, storage, `eval` or clipboard call. The one image they load is
+    conditional formatting's icon sets, each an SVG `data:` URL bundled in the package.
   - `@univerjs/telemetry` is an empty identifier that `sheets-ui` asks for as optional; nothing
     registers it here, so nothing is reported.
   - **`IMAGE()` is removed from the formula engine** (`withoutRemoteFunctions`): it builds an
@@ -185,11 +242,73 @@ A mutation the capture does not know is **counted, not stored**: `binding.unboun
 such mutation id to how many times it ran. Four are deliberately ignored: the computed
 auto-height, `empty`, `copy-worksheet-end` and `mark-dirty-filter-change`.
 
-Not bound today, because their plugins are not loaded: **filters, data validation, conditional
-formatting**, protection and permissions, range themes. Each needs its mutations captured into
-`rules` and reconciled back, with its custom formulas through the codec. A
+Not bound today, because their plugins are not loaded: protection and permissions, range themes.
+Filters, data validation and conditional formatting are bound since 147.13
+([below](#filters-validation-and-conditional-formatting)). A
 `defaultRowHeight` or `defaultColumnWidth` changed on another device is stored but not shown,
 because Univer has no mutation for it.
+
+## The person's regional syntax
+
+Univer's engine and editor speak only canonical syntax, and **switching Univer's number locale
+alone is unsafe**: under `pt-BR` its parser reads an edited `3.5` as `35`, because its editor shows
+stored numbers with a dot. `applyRegionalSyntax` therefore does four things, from the spreadsheet's
+own settings ([`lib/regional`](../../lib/regional/README.md)), once per editor:
+
+1. **Univer's number locale** (`setNumfmtLocal`) is the first of the country's own locale and a
+   short list (`NUMFMT_CANDIDATES`) whose `numfmt` output matches the preferred decimal sign,
+   grouping and date order (`numfmtLocaleFor`). Formatted numbers are drawn and typed numbers and
+   dates are read in it; month names follow it. It has no lakh grouping and no space-with-dot.
+2. **`BEFORE_CELL_EDIT`** (priority −0.5: after Univer's number-format handler, before the sheets
+   plugin's terminal one at −1, below which nothing runs) shows what the editor will hold in the
+   person's syntax: a formula through `localizeFormula`, a stored number with its decimal comma at
+   full precision, a percentage likewise. **What Univer then parses on Enter is exactly what it
+   showed**, so `3,5` comes back as 3.5.
+3. **`AFTER_CELL_EDIT`** (priority 10 000, first) turns a typed formula canonical before anything
+   else reads it; numbers are left to Univer's parser in the locale of step 1.
+4. **General numbers** — no format — are drawn with the decimal comma (`CELL_CONTENT` at priority 1,
+   after the number format at 10). Univer's width-based shortening of long general numbers does not
+   apply to them.
+
+The **currency button** uses the preferred currency: its symbol as the person's country writes it
+(`R$`, `US$`, `€`) is registered in `localeCurrencySymbolMap` under a region of ours, and
+`RegionService` points at it. With the canonical syntax, steps 2–4 register nothing.
+
+**A change of settings restarts the editor**, on every device with the spreadsheet open: the
+regional fields are in the effect's dependencies, and `useSheetRegional` re-reads them whenever the
+document's `regional` entry changes. `regional.test.ts` runs a headless Univer: the round trip of an edited number, the
+formula both ways, general and formatted display, the locale choice, the currency, and disposal.
+
+**Not translated**: Univer's formula autocomplete, function help and argument hints (English names,
+`,` in the hint), error values, and `TRUE`/`FALSE` displayed in cells.
+
+## Filters, validation and conditional formatting
+
+Each lives in its plugin's model, not in the cells, and the plugins describe edits as their own
+mutations: four for the filter, three for validation, four for conditional formatting
+(`FEATURE_MUTATIONS`). `FeatureModels` reads and writes the three models; what is stored is in
+[`lib/spreadsheets`](../../lib/spreadsheets/README.md#filters-validation-and-conditional-formatting).
+
+- **Local: read back, never interpreted.** A feature mutation only marks its sheet and feature
+  dirty. When the command is flushed — after its cell and line operations are applied, so the
+  `Y.Doc`'s axes match Univer's — `captureFeature` reads the sheet's whole list for that feature
+  off the model, stores each rule by ids, and writes only what differs; a rule gone from the model
+  is deleted. A paste, a fill, a sort or a row insertion that makes the plugin move its ranges
+  reads back to the same ids and writes nothing.
+- **A trimmed range is not rewritten.** When the stored ids still resolve to the range Univer shows
+  — rows removed from inside it on this device — the stored ranges are kept. Otherwise the device
+  that removed rows would write the whole rule again and erase a change another device made to it
+  at the same time; the two-device test of a trim caught that.
+- **Remote: reconciled per sheet.** Univer moves a feature's ranges when *its own* command inserts
+  or removes lines, not when the binding applies another device's insertion, so every sheet whose
+  `rules` changed is reconciled, and every sheet after anything structural (lines, sheets, a sheet
+  renamed). `reconcileFeatures` compares, per feature, the rules at the current positions with the
+  model's, and when they differ removes the model's and writes the stored ones, `fromCollab`.
+  Conditional formats are added last-first, because Univer puts each new one on top.
+- **Opening a spreadsheet** reconciles every sheet once, after defined names — the same step.
+- **Undo** reverts the rules like any other change, and reaches Univer by the remote path.
+- **Filtered rows are hidden by the filter**, through Univer's filtered-rows service, not as hidden
+  rows: nothing about them is stored but the filter.
 
 ## Charts
 

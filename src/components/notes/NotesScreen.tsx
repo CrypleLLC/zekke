@@ -30,6 +30,7 @@ import { Button, Card, Empty, FloatingAddButton, Notice, SizeStepper, Spinner } 
 import { PageTile } from '@/components/tiles';
 import ShareItemDialog from '@/components/sharing/ShareItemDialog';
 import FolderTabs, { MoveToTab, startItemDrag, useFolderTabs } from '@/components/folders/FolderTabs';
+import { regionalDate } from '@/lib/regional';
 
 type View = { mode: 'list' } | { mode: 'note'; id?: string };
 
@@ -317,7 +318,7 @@ function NoteFile({
   return (
     <PageTile
       title={tile.title}
-      caption={new Date(tile.updatedAt).toLocaleDateString()}
+      caption={regionalDate(new Date(tile.updatedAt))}
       aspectClass="aspect-[3/4]"
       readable={tile.readable}
       unreadableIcon={NotesIcon}

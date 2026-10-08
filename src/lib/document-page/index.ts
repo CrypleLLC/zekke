@@ -99,9 +99,25 @@ export function pageMargins(stored: unknown): PageMargins {
   return fits ? margins : LEGACY_PAGE_MARGINS;
 }
 
-export function marginLabel(millimetres: number): string {
-  const centimetres = tenth(millimetres) / 10;
-  return `${centimetres.toLocaleString('en', { maximumFractionDigits: 2 })} cm`;
+export type RulerSystem = 'metric' | 'imperial';
+
+export interface RulerUnits {
+  unit: 'cm' | 'in';
+  millimetres: number;
+  step: number;
+  fine: number;
+  large: number;
+}
+
+export const RULER_UNITS: Record<RulerSystem, RulerUnits> = {
+  metric: { unit: 'cm', millimetres: 10, step: MARGIN_STEP_MM, fine: MARGIN_FINE_STEP_MM, large: MARGIN_LARGE_STEP_MM },
+  imperial: { unit: 'in', millimetres: 25.4, step: 6.35, fine: 3.175, large: 25.4 },
+};
+
+export function marginLabel(millimetres: number, system: RulerSystem = 'metric'): string {
+  const units = RULER_UNITS[system];
+  const value = tenth(millimetres) / units.millimetres;
+  return `${value.toLocaleString('en', { maximumFractionDigits: 2 })} ${units.unit}`;
 }
 
 export const MARGIN_NAMES: Record<MarginSide, string> = {
@@ -129,13 +145,6 @@ export const PAPER_SIZES: Record<PaperSize, { width: number; height: number; css
   a4: { width: PAGE_WIDTH_MM, height: PAGE_HEIGHT_MM, css: 'A4' },
   letter: { width: 215.9, height: 279.4, css: 'letter' },
 };
-
-const LETTER_REGIONS = new Set(['US', 'CA', 'MX', 'PH', 'CL', 'CO', 'VE', 'GT', 'CR', 'PA', 'DO', 'PR', 'SV']);
-
-export function defaultPaperFor(locale: string | undefined): PaperSize {
-  const region = /[-_]([A-Za-z]{2})(?:[-_]|$)/.exec(locale ?? '')?.[1]?.toUpperCase();
-  return region !== undefined && LETTER_REGIONS.has(region) ? 'letter' : 'a4';
-}
 
 export function paperDimensions(paper: PaperSize, orientation: PageOrientation): { width: number; height: number } {
   const { width, height } = PAPER_SIZES[paper];

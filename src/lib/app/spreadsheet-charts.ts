@@ -1,7 +1,7 @@
 import type { ChartKind, SeriesOrientation } from "@/lib/spreadsheets/charts";
 
 export const CHART_LABELS = {
-  insert: "Insert chart",
+  menu: "Chart",
   panel: "Chart",
   close: "Close the chart settings",
   title: "Title",

@@ -6,13 +6,18 @@ import '@univerjs/docs-ui/lib/index.css';
 import '@univerjs/sheets-ui/lib/index.css';
 import '@univerjs/sheets-formula-ui/lib/index.css';
 import '@univerjs/sheets-numfmt-ui/lib/index.css';
+import '@univerjs/sheets-filter-ui/lib/index.css';
+import '@univerjs/sheets-data-validation-ui/lib/index.css';
+import '@univerjs/sheets-conditional-formatting-ui/lib/index.css';
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { Doc as YDoc } from 'yjs';
 import {
   CHART_LABELS,
   CHART_NEEDS_RANGE,
   PRINT_LABELS,
+  SPREADSHEET_SETTINGS_COPY,
   SPREADSHEET_FILE_LABELS,
   UNTITLED_SPREADSHEET,
   capacityRefusalMessage,
@@ -36,7 +41,9 @@ import {
   type ResolvedChart,
 } from '@/lib/spreadsheets';
 import { Notice } from '@/components/ui';
-import { ChartIcon, DownloadIcon, PrintIcon, UndoIcon } from '@/components/ui/icons';
+import { ChartIcon, DownloadIcon, PrintIcon, SettingsIcon, UndoIcon } from '@/components/ui/icons';
+import { Modal } from '@/components/modal';
+import RegionalSettings from './RegionalSettings';
 import { SpreadsheetBinding } from './binding';
 import ChartLayer from './ChartLayer';
 import ChartPanel from './ChartPanel';
@@ -46,18 +53,35 @@ import { SheetPrintReader } from './print-source';
 import SheetPrint from './SheetPrint';
 import { guardPrivateText } from './private-text';
 import { startSpreadsheetUniver } from './univer';
+import { applyRegionalSyntax } from './regional';
+import { registerChartMenu } from './chart-menu';
+import { EMPTY_RIBBON_TABS, RibbonTabsSource, type RibbonTabsState } from './ribbon-tabs';
+import { useSheetRegional } from './useSheetRegional';
+import { functionNamesFor } from '@/lib/spreadsheets/function-names';
 
-export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: string }) {
+export default function SpreadsheetEditor({
+  doc,
+  unitId,
+  toolbarSlot,
+}: {
+  doc: YDoc;
+  unitId: string;
+  toolbarSlot: HTMLElement | null;
+}) {
   const container = useRef<HTMLDivElement>(null);
   const layer = useRef<HTMLDivElement>(null);
   const [session, setSession] = useState<{
     binding: SpreadsheetBinding;
     charts: ChartViewSource;
     print: SheetPrintReader;
+    ribbon: RibbonTabsSource;
   }>();
   const binding = session?.binding;
   const [refusal, setRefusal] = useState<CapacityRefusal>();
   const [downloadError, setDownloadError] = useState<string>();
+  const insertChartRef = useRef<() => void>(() => undefined);
+  const sheetRegional = useSheetRegional(doc);
+  const { country, number, date, currency, functions } = sheetRegional.regional;
 
   useEffect(() => {
     const element = container.current;
@@ -66,19 +90,28 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
     }
     const stopGuard = guardPrivateText(document.body);
     const host = document.createElement('div');
-    host.className = 'absolute inset-0';
+    host.className = 'zekke-sheet-host absolute inset-0';
     element.appendChild(host);
     const univer = startSpreadsheetUniver(host, doc, unitId);
+    const stopChartMenu = registerChartMenu(univer, {
+      title: CHART_LABELS.menu,
+      icon: ChartMenuIcon,
+      onInsert: () => insertChartRef.current(),
+    });
+    const stopRegional = applyRegionalSyntax(univer, { country, number, date, currency }, functionNamesFor(functions));
     const created = new SpreadsheetBinding({ univer, unitId, doc, onCapacityRefused: setRefusal });
     setSession({
       binding: created,
       charts: new ChartViewSource(univer, unitId),
       print: new SheetPrintReader(univer, unitId),
+      ribbon: new RibbonTabsSource(univer),
     });
 
     return () => {
       setSession(undefined);
       created.dispose();
+      stopRegional();
+      stopChartMenu();
       stopGuard();
       host.style.display = 'none';
       setTimeout(() => {
@@ -86,7 +119,7 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
         host.remove();
       });
     };
-  }, [doc, unitId]);
+  }, [doc, unitId, country, number, date, currency, functions]);
 
   const history = useHistory(binding);
   const { view, charts } = useSheetCharts(session?.charts, doc, layer);
@@ -95,6 +128,7 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
   const [chartMessage, setChartMessage] = useState<string>();
   const editedChart = charts.find(({ chart }) => chart.id === editedChartId)?.chart;
   const [printing, setPrinting] = useState<{ sheetId: string; selection: GridRange | undefined }>();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const openPrint = useCallback(() => {
     const sheetId = session?.charts.activeSheetId();
@@ -161,6 +195,10 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
     }
   };
 
+  useEffect(() => {
+    insertChartRef.current = insertChart;
+  });
+
   const placeChart = (chart: ResolvedChart, rect: ContentRect) => {
     if (view !== undefined) {
       storeChart(chart.id, { ...chart, anchor: anchorFromRect(view.rows, view.columns, rect) });
@@ -194,35 +232,50 @@ export default function SpreadsheetEditor({ doc, unitId }: { doc: YDoc; unitId: 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div role="toolbar" aria-label="History" className="flex items-center gap-1 px-3 py-1">
-        <HistoryButton label="Undo" disabled={!history.canUndo} onClick={() => binding?.undo()}>
-          <UndoIcon className="h-4 w-4" />
-        </HistoryButton>
-        <HistoryButton label="Redo" disabled={!history.canRedo} onClick={() => binding?.redo()}>
-          <UndoIcon flipped className="h-4 w-4" />
-        </HistoryButton>
-        <span className="flex-1" />
-        <button
-          type="button"
-          disabled={binding === undefined}
-          onClick={insertChart}
-          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40"
+      {toolbarSlot === null
+        ? null
+        : createPortal(
+              <div role="toolbar" aria-label="Spreadsheet" className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                <HistoryButton label="Undo" disabled={!history.canUndo} onClick={() => binding?.undo()}>
+                  <UndoIcon className="h-4 w-4" />
+                </HistoryButton>
+                <HistoryButton label="Redo" disabled={!history.canRedo} onClick={() => binding?.redo()}>
+                  <UndoIcon flipped className="h-4 w-4" />
+                </HistoryButton>
+                <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
+                <RibbonTabs source={session?.ribbon} />
+                <span className="flex-1" />
+                        <button
+                  type="button"
+                  title={PRINT_LABELS.openHint}
+                  disabled={binding === undefined}
+                  onClick={openPrint}
+                  className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <PrintIcon className="h-4 w-4" />
+                  {PRINT_LABELS.open}
+                </button>
+                <DownloadMenu doc={doc} binding={binding} onError={setDownloadError} />
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60"
+                >
+                  <SettingsIcon className="h-4 w-4" />
+                  {SPREADSHEET_SETTINGS_COPY.open}
+                </button>
+              </div>,
+            toolbarSlot,
+          )}
+      {settingsOpen ? (
+        <Modal
+          title={SPREADSHEET_SETTINGS_COPY.title}
+          subtitle={SPREADSHEET_SETTINGS_COPY.subtitle}
+          onClose={() => setSettingsOpen(false)}
         >
-          <ChartIcon className="h-4 w-4" />
-          {CHART_LABELS.insert}
-        </button>
-        <button
-          type="button"
-          title={PRINT_LABELS.openHint}
-          disabled={binding === undefined}
-          onClick={openPrint}
-          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-compact font-semibold text-ink-soft transition hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <PrintIcon className="h-4 w-4" />
-          {PRINT_LABELS.open}
-        </button>
-        <DownloadMenu doc={doc} binding={binding} onError={setDownloadError} />
-      </div>
+          <RegionalSettings handle={sheetRegional} />
+        </Modal>
+      ) : null}
       {printing !== undefined && session !== undefined ? (
         <SheetPrint
           doc={doc}
@@ -311,6 +364,41 @@ function useHistory(binding: SpreadsheetBinding | undefined): { canUndo: boolean
   }, [binding]);
 
   return history;
+}
+
+function ChartMenuIcon({ className }: { className?: string }) {
+  return <ChartIcon className={className} />;
+}
+
+function RibbonTabs({ source }: { source: RibbonTabsSource | undefined }) {
+  const [state, setState] = useState<RibbonTabsState>(EMPTY_RIBBON_TABS);
+
+  useEffect(() => {
+    if (source === undefined) {
+      setState(EMPTY_RIBBON_TABS);
+      return;
+    }
+    return source.subscribe(setState);
+  }, [source]);
+
+  return (
+    <div role="tablist" aria-label="Toolbar sections" className="flex items-center gap-0.5">
+      {state.tabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={state.active === tab.key}
+          onClick={() => source?.select(tab.key)}
+          className={`flex h-8 items-center rounded-md px-2.5 text-compact font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60 ${
+            state.active === tab.key ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-raised hover:text-ink'
+          }`}
+        >
+          {tab.title}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function HistoryButton({

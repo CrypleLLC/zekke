@@ -2,6 +2,7 @@ import { formatBytes } from "./vault";
 import { daysLabel } from "./trash";
 import { countOf, FILE_NOUNS, type FolderNouns } from "./folders";
 import type { FileRecord, StorageUsage, UploadProgress } from "@/lib/files";
+import { regionalCount } from '@/lib/regional';
 
 export const UNREADABLE_FILE_NAME = "Unreadable file";
 export const FILE_NAME_MAX_CHARACTERS = 80;
@@ -331,7 +332,7 @@ export function exactBytesLabel(bytes: number): string {
     return formatBytes(bytes);
   }
   const whole = Math.round(bytes);
-  const exact = `${whole.toLocaleString("en-US")} ${whole === 1 ? "byte" : "bytes"}`;
+  const exact = `${regionalCount(whole)} ${whole === 1 ? "byte" : "bytes"}`;
   return whole < 1024 ? exact : `${formatBytes(whole)} (${exact})`;
 }
 

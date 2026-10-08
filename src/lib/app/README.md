@@ -386,6 +386,12 @@ carries its `kind` and, for a readable spreadsheet, the `grid` its miniature dra
   series orientation, `CHART_NEEDS_RANGE` when there is nothing to chart, `chartHeadersLabel`, which
   says first row or first column to match the orientation, and `chartAccessibleName` for the chart
   on the grid.
+- `region.ts` is the regional settings' copy — the account's **Region** tab (`REGION_COPY`) and a spreadsheet's **Settings** menu (`SPREADSHEET_SETTINGS_COPY`, `FUNCTION_LANGUAGE_COPY`): the labels, an example of each date, time and number format,
+  `currencyLabel` (code and name), and `countryDefaultHint`, which says what the country uses when
+  the person chose otherwise, for an account field or a spreadsheet one.
+- `spreadsheet-rebuild.ts` is the rebuild's copy: the offer, the saving (`rebuildSavingLabel`, which
+  says when the size is content rather than history), what a rebuild costs given the account's
+  Trash retention, the two refusals, a partial outcome, and the notice on a copy that was rebuilt.
 - `spreadsheet-print.ts` is the print preview's copy: `PRINT_LABELS`, a name for each paper,
   orientation, scale, margin preset and page order, the labels of repeated rows and columns and of a
   break, and `pageCountLabel`, which gives the scale when it is not 100 % and says when the page

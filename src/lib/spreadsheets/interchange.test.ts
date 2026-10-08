@@ -133,7 +133,7 @@ describe('importing the xlsx corpus', () => {
   it('names what it could not bring in', async () => {
     const { report, sheets } = await importSpreadsheet('corpus.xlsx', fixture('corpus.xlsx'));
     expect(sheets).toBe(6);
-    expect(report).toEqual({ comments: 1, hyperlinks: 1, dataValidations: 1, conditionalFormats: 2 });
+    expect(report).toEqual({ comments: 1, hyperlinks: 1 });
   });
 
   it('is a spreadsheet titled after the file', async () => {

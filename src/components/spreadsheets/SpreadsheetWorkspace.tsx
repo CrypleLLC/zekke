@@ -1,21 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  REBUILD_LABELS,
+  REBUILD_OFFER_MESSAGE,
+  REPLACED_MESSAGE,
   documentHref,
   saveStatusLabel,
   snapshotCapacityMessage,
   UNTITLED_SPREADSHEET,
 } from '@/lib/app';
-import type { SyncState } from '@/lib/documents';
-import { SPREADSHEET_SYNC_OPTIONS, isSpreadsheet, newSpreadsheetDoc } from '@/lib/spreadsheets';
+import type { DocumentSync, SyncState } from '@/lib/documents';
+import {
+  META_MAP,
+  SPREADSHEET_SYNC_OPTIONS,
+  isSpreadsheet,
+  newSpreadsheetDoc,
+  readReplacedBy,
+  shouldOfferRebuild,
+} from '@/lib/spreadsheets';
 import * as Y from 'yjs';
 import type { Doc as YDoc } from 'yjs';
-import { Notice, Spinner } from '@/components/ui';
+import { Button, Notice, Spinner } from '@/components/ui';
+import { useZekke } from '@/components/session/ZekkeProvider';
 import { SaveStatus, TitleInput } from '@/components/documents/ItemHeader';
 import { useDocumentSync, type DocumentSyncSetup } from '@/components/documents/useDocumentSync';
 
@@ -27,6 +38,8 @@ const SpreadsheetEditor = dynamic(() => import('./SpreadsheetEditor'), {
     </div>
   ),
 });
+
+const RebuildDialog = dynamic(() => import('./RebuildDialog'), { ssr: false });
 
 const SPREADSHEET_SETUP: DocumentSyncSetup = {
   syncOptions: SPREADSHEET_SYNC_OPTIONS,
@@ -60,7 +73,7 @@ export default function SpreadsheetWorkspace({ id }: { id: string }) {
     );
   }
 
-  return <SpreadsheetSurface id={id} doc={sync.doc} state={state} />;
+  return <SpreadsheetSurface id={id} sync={sync} state={state} />;
 }
 
 function MovedTo({ href }: { href: string }) {
@@ -73,32 +86,73 @@ function MovedTo({ href }: { href: string }) {
   return null;
 }
 
-function SpreadsheetSurface({ id, doc, state }: { id: string; doc: YDoc; state: SyncState }) {
+function useReplacedBy(doc: YDoc): string | undefined {
+  const [replacedBy, setReplacedBy] = useState(() => readReplacedBy(doc));
+
+  useEffect(() => {
+    const meta = doc.getMap(META_MAP);
+    const read = () => setReplacedBy(readReplacedBy(doc));
+    read();
+    meta.observe(read);
+    return () => meta.unobserve(read);
+  }, [doc]);
+
+  return replacedBy;
+}
+
+function SpreadsheetSurface({ id, sync, state }: { id: string; sync: DocumentSync; state: SyncState }) {
+  const doc = sync.doc;
+  const { fullDevice } = useZekke();
   const capacity = snapshotCapacityMessage(state.capacity);
+  const replacedBy = useReplacedBy(doc);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [toolbarSlot, setToolbarSlot] = useState<HTMLDivElement | null>(null);
+  const offerRebuild = fullDevice && replacedBy === undefined && shouldOfferRebuild(state);
 
   return (
     <main className="flex h-[calc(100dvh-var(--staging-banner-h))] flex-col bg-ground">
-      <header className="shrink-0 border-b border-line bg-surface">
-        <div className="flex items-center gap-3 px-3 pt-2.5">
-          <Link href="/" aria-label="Back to your vault" className="shrink-0">
+      <header className="relative z-20 shrink-0 border-b border-line bg-surface">
+        <div className="flex items-start gap-3 px-3 py-2">
+          <Link href="/" aria-label="Back to your vault" className="mt-1 shrink-0">
             <Image src="/zekke-logo.png" alt="Zekke" width={28} height={28} priority />
           </Link>
-          <div className="min-w-0 flex-1">
-            <TitleInput doc={doc} label="Spreadsheet title" placeholder={UNTITLED_SPREADSHEET} />
+          <div className="min-w-0 max-w-md flex-none">
+            <TitleInput doc={doc} label="Spreadsheet title" placeholder={UNTITLED_SPREADSHEET} fit />
             <SaveStatus
               label={saveStatusLabel(state.status, state.pending)}
               gapDetected={state.gapDetected}
               gapMessage="Some updates are missing — this spreadsheet will not be compacted"
             />
           </div>
+          <div ref={setToolbarSlot} className="flex min-w-0 flex-1 flex-wrap items-center pt-0.5" />
         </div>
-        {capacity !== undefined && (
+        {replacedBy !== undefined && (
           <div className="px-3 pt-2">
-            <Notice tone={state.capacity === 'over' ? 'danger' : 'warning'}>{capacity}</Notice>
+            <Notice tone="warning">
+              {REPLACED_MESSAGE}{' '}
+              <Link href={documentHref(replacedBy, 'spreadsheet')} className="font-semibold text-brand-700 hover:underline">
+                {REBUILD_LABELS.openNew}
+              </Link>
+            </Notice>
+          </div>
+        )}
+        {(capacity !== undefined || offerRebuild) && (
+          <div className="px-3 pt-2">
+            <Notice tone={state.capacity === 'over' ? 'danger' : 'warning'}>
+              {capacity ?? REBUILD_OFFER_MESSAGE}
+              {offerRebuild ? (
+                <div className="mt-2">
+                  <Button variant="secondary" onClick={() => setRebuilding(true)}>
+                    {REBUILD_LABELS.offer}
+                  </Button>
+                </div>
+              ) : null}
+            </Notice>
           </div>
         )}
       </header>
-      <SpreadsheetEditor doc={doc} unitId={id} />
+      {rebuilding ? <RebuildDialog sync={sync} onClose={() => setRebuilding(false)} /> : null}
+      <SpreadsheetEditor doc={doc} unitId={id} toolbarSlot={toolbarSlot} />
     </main>
   );
 }

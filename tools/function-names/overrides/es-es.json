@@ -1,0 +1,342 @@
+{
+ "FIND": {
+  "name": "FIND",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FINDB": {
+  "name": "FINDB",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "ACOS": {
+  "name": "ACOS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN": {
+  "name": "ATAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN2": {
+  "name": "ATAN2",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COS": {
+  "name": "COS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COVAR": {
+  "name": "COVAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CSC": {
+  "name": "CSC",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAUSS": {
+  "name": "GAUSS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LAMBDA": {
+  "name": "LAMBDA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LET": {
+  "name": "LET",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MAP": {
+  "name": "MAP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NEGBINOMDIST": {
+  "name": "NEGBINOMDIST",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "PEARSON": {
+  "name": "PEARSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "POISSON": {
+  "name": "POISSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TAN": {
+  "name": "TAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR": {
+  "name": "VAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.P": {
+  "name": "VAR.P",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.S": {
+  "name": "VAR.S",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARA": {
+  "name": "VARA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARP": {
+  "name": "VARP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARPA": {
+  "name": "VARPA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AND": {
+  "name": "Y",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CONCATENATE": {
+  "name": "CONCATENAR",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "DATE": {
+  "name": "FECHA",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "EXP": {
+  "name": "EXP",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "EXPAND": {
+  "name": "EXPANDIR",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "FALSE": {
+  "name": "FALSO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "IFS": {
+  "name": "SI.CONJUNTO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "INT": {
+  "name": "ENTERO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "NOT": {
+  "name": "NO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "OR": {
+  "name": "O",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "PI": {
+  "name": "PI",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "SWITCH": {
+  "name": "CAMBIAR",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "TEXT": {
+  "name": "TEXTO",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "TODAY": {
+  "name": "HOY",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "VLOOKUP": {
+  "name": "BUSCARV",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CHOOSEROWS": {
+  "name": "ELEGIRFILAS",
+  "why": "the article names the function ELEGIRFILAS; its syntax line was left in English"
+ },
+ "COVARIANCE.P": {
+  "name": "COVARIANZA.P",
+  "why": "the article names the function COVARIANZA.P; its syntax line was left in English"
+ },
+ "TEXTAFTER": {
+  "name": "TEXTODESPUES",
+  "why": "the article names the function TEXTODESPUES; its syntax line was left in English"
+ },
+ "TEXTBEFORE": {
+  "name": "TEXTOANTES",
+  "why": "the article names the function TEXTOANTES; its syntax line was left in English"
+ },
+ "VALUETOTEXT": {
+  "name": "VALORATEXTO",
+  "why": "the article names the function VALORATEXTO; its syntax line was left in English"
+ },
+ "TIME": {
+  "name": "NSHORA",
+  "why": "the time article writes NSHORA; HORA there is HOUR"
+ },
+ "SIN": {
+  "name": "SENO",
+  "why": "the sin article writes SENO; PI and RADIANES are other functions"
+ },
+ "RAND": {
+  "name": "ALEATORIO",
+  "why": "the rand article writes ALEATORIO (a stray ALEAT also appears)"
+ },
+ "UNIQUE": {
+  "name": "UNIQUE",
+  "why": "the article leaves the syntax in English and the only other name it gives (ÚNICO) is not established elsewhere: kept in English"
+ },
+ "FORECAST.LINEAR": {
+  "name": "PRONOSTICO.LINEAL",
+  "why": "the forecast-and-forecast-linear article names it in its syntax line"
+ },
+ "CEILING.MATH": {
+  "name": "MULTIPLO.SUPERIOR.MAT",
+  "why": "the article names the function MULTIPLO.SUPERIOR.MAT; its syntax line is machine-translated (DE TECHO. MATH)"
+ },
+ "PERCENTILE.EXC": {
+  "name": "PERCENTIL.EXC",
+  "why": "the article names the function PERCENTIL.EXC; the syntax line splits it with markup"
+ },
+ "ISODD": {
+  "name": "ISODD",
+  "why": "the IS functions article gives only the hybrid ESODD, which is not a name: kept in English"
+ },
+ "ISERR": {
+  "name": "ESERR",
+  "why": "named in the IS functions article"
+ },
+ "ISERROR": {
+  "name": "ESERROR",
+  "why": "named in the IS functions article"
+ },
+ "ISFORMULA": {
+  "name": "ESFORMULA",
+  "why": "named in its article"
+ },
+ "ISREF": {
+  "name": "ESREF",
+  "why": "named in the IS functions article"
+ },
+ "ISTEXT": {
+  "name": "ESTEXTO",
+  "why": "named in the IS functions article"
+ },
+ "CHAR": {
+  "name": "CARACTER",
+  "why": "the syntax line says CARACTER; CAR in the example is the French name"
+ },
+ "COUNTBLANK": {
+  "name": "CONTAR.BLANCO",
+  "why": "the syntax line says CONTAR.BLANCO; the example drops the dot"
+ },
+ "IFERROR": {
+  "name": "SI.ERROR",
+  "why": "the example formulas use SI.ERROR; the syntax line drops the dot (SIERROR)"
+ },
+ "TRIM": {
+  "name": "ESPACIOS",
+  "why": "the syntax line says ESPACIOS; RECORTAR and SUPRESP in the examples are not Excel’s Spanish names for it"
+ },
+ "ADDRESS": {
+  "name": "DIRECCION",
+  "why": "the localized index says DIRECCIÓN, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "AGGREGATE": {
+  "name": "AGREGAR",
+  "why": "the localized index says AGREGADO, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "BITXOR": {
+  "name": "BIT.XO",
+  "why": "the localized index says BIT.XID, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "CHOOSE": {
+  "name": "ELEGIR",
+  "why": "the localized index says ELIJA, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "CODE": {
+  "name": "CODIGO",
+  "why": "the localized index says CÓDIGO, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "COUPDAYS": {
+  "name": "CUPON.DIAS",
+  "why": "the localized index says COUPDACUPON.DIAS, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "DB": {
+  "name": "DB",
+  "why": "only the localized index names it (NOSQL), and the index is machine-translated in many entries: kept in English"
+ },
+ "DURATION": {
+  "name": "DURACION",
+  "why": "the localized index says DURACIÓN, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "F.DIST": {
+  "name": "DISTR.F.N",
+  "why": "the localized index says DISTR.F.IST, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "F.TEST": {
+  "name": "PRUEBA.F.N",
+  "why": "the localized index says F.PRUEBA, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "FACT": {
+  "name": "FACT",
+  "why": "only the localized index names it (HECHO), and the index is machine-translated in many entries: kept in English"
+ },
+ "FIXED": {
+  "name": "DECIMAL",
+  "why": "the localized index says CORREGIDO, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "INDEX": {
+  "name": "INDICE",
+  "why": "the localized index says ÍNDICE, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "MAKEARRAY": {
+  "name": "MAKEARRAY",
+  "why": "only the localized index names it (ARCHIVOMAKEARRAY), and the index is machine-translated in many entries: kept in English"
+ },
+ "MUNIT": {
+  "name": "M.UNIDAD",
+  "why": "the localized index says MUNIDAD, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "PDURATION": {
+  "name": "P.DURACION",
+  "why": "the localized index says PDURACIÓN, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "PERMUTATIONA": {
+  "name": "PERMUTACIONES.A",
+  "why": "the localized index says PERMUTACIONES, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "POWER": {
+  "name": "POTENCIA",
+  "why": "the localized index says ALIMENTACIÓN, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "QUARTILE.EXC": {
+  "name": "CUARTIL.EXC",
+  "why": "the localized index says QUARTILCUARTIL.EXC, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "SCAN": {
+  "name": "SCAN",
+  "why": "only the localized index names it (ESCANER), and the index is machine-translated in many entries: kept in English"
+ },
+ "T.TEST": {
+  "name": "PRUEBA.T.N",
+  "why": "the localized index says PRUEBA.T, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "TOROW": {
+  "name": "ENFILA",
+  "why": "the localized index names it ENFILA, matching its sibling TOCOL = ENCOL in its article; its own article was left in English"
+ },
+ "TRUE": {
+  "name": "VERDADERO",
+  "why": "the localized index says FALSO, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ },
+ "WRAPCOLS": {
+  "name": "WRAPCOLS",
+  "why": "only the localized index names it (AJUSTARCOLS), and the index is machine-translated in many entries: kept in English"
+ },
+ "WRAPROWS": {
+  "name": "WRAPROWS",
+  "why": "only the localized index names it (AJUSTARFILAS), and the index is machine-translated in many entries: kept in English"
+ },
+ "XIRR": {
+  "name": "TIR.NO.PER",
+  "why": "the localized index says TIR, but it is machine-translated in many entries (POWER as ALIMENTACIÓN, DB as NOSQL); the article’s name stands"
+ }
+}

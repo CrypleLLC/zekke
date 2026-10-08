@@ -1,4 +1,5 @@
 import type { FileRecord } from '@/lib/files';
+import { regionalDate, regionalShortDate, regionalTime } from '@/lib/regional';
 
 export const LISTING_EMPTY_CELL = '—';
 
@@ -28,14 +29,10 @@ export function listingDateLabel(at: string, now: Date = new Date()): string {
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate();
   if (sameDay) {
-    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return regionalTime(date);
   }
 
-  return date.toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
-  });
+  return date.getFullYear() === now.getFullYear() ? regionalShortDate(date) : regionalDate(date);
 }
 
 export function dateAndTimeLabels(at: string): { date: string; time: string } {
@@ -45,8 +42,8 @@ export function dateAndTimeLabels(at: string): { date: string; time: string } {
   }
 
   return {
-    date: moment.toLocaleDateString(),
-    time: moment.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+    date: regionalDate(moment),
+    time: regionalTime(moment),
   };
 }
 

@@ -34,6 +34,13 @@ says **what** the layout is and how to use it.
 | `interchange.ts` | `importSpreadsheet` and the exports: format, capacity, title and names in one place |
 | `charts.ts`   | A chart as a `chart` rule: its settings, its data range and its box, stored by ids; the ECharts option |
 | `chart-geometry.ts` | A chart's box on the grid: lines and offsets ↔ pixels, the default placement, moves and resizes |
+| `features.ts` | Filters, data validation and conditional formatting as rules: their ids, the formulas inside them, and the conversion to and from Univer's form |
+| `xlsx-features.ts` | Those three features in and out of `.xlsx` through ExcelJS |
+| `rebuild.ts`  | `rebuildSpreadsheet`: the same spreadsheet in a fresh `Y.Doc`, without its history |
+| `rebuild-item.ts` | Rebuilding the item: the copy, its folder, the pointer from the old one, the Trash |
+| `sheet-regional.ts` | The spreadsheet's own regional settings in `meta`: read, write, observe |
+| `formula-locale.ts` | `localizeFormula` / `canonicalizeFormula`: a formula in the person's syntax and back |
+| `function-names/` | The function-name tables, one per language, and `functionNamesFor` |
 | `print.ts`    | A sheet's page setup, print area, repeated rows and columns and page breaks, stored by ids |
 | `print-layout.ts` | Pagination: `PrintGrid`, `layoutPrint`, a page's regions, and where each cell, gridline and chart lands |
 | `print-style.ts` | `cellLook`: Univer's cell style read into what a printed cell needs, every value checked |
@@ -41,7 +48,8 @@ says **what** the layout is and how to use it.
 ## The `Y.Doc`
 
 ```
-meta            Y.Map    title, kind = 'spreadsheet'
+meta            Y.Map    title, kind = 'spreadsheet', replacedBy (the item a rebuild made, once rebuilt),
+                         regional (the spreadsheet's own regional settings, a plain object)
 sheetOrder      Y.Array  sheet ids, in tab order
 sheets          Y.Map    sheet id → sheet map
 styles          Y.Map    style id → style JSON
@@ -146,7 +154,9 @@ back, or returns `undefined` when every line in it is gone.
   overlapping merges made concurrently the one with the smaller id is kept, on every device.
 - **Rules** carry a `feature` name and an opaque `body`. Which features exist, and what their
   bodies hold, is the binding's business: this module only keeps their ranges anchored. A rule
-  whose ranges are all gone is not returned.
+  whose ranges are all gone is not returned. The features stored as rules are charts
+  ([Charts](#charts)), printing ([Printing](#printing)), and filters, validation and conditional
+  formatting ([Filters, validation and conditional formatting](#filters-validation-and-conditional-formatting)).
 
 ## Charts
 
@@ -176,6 +186,97 @@ where each line ends — and `lineAt` finds the line under a coordinate by binar
 hidden lines, whose size is zero. `anchorRect` and `anchorFromRect` turn a box into pixels and
 back; a box is never stored smaller than `MIN_CHART_SIZE`. `defaultChartAnchor` places a new chart
 one column right of its data, level with its first row, at 480 × 300.
+
+## Filters, validation and conditional formatting
+
+Univer keeps these three in the workbook's `resources`, outside `IWorkbookData`'s sheets, and its
+plugins describe them in Univer's own form (`FeatureRule`: an id, index ranges, a body). Here each
+is a rule in its sheet's `rules`, anchored on ids like every other.
+
+| Feature | Rule id | Body |
+| --- | --- | --- |
+| `filter` | `filter:sheet`, one per sheet | `{ columns: [{ column: <column id>, criteria }] }` — the criteria by column **id**, so an inserted column does not move them onto its neighbour |
+| `data-validation` | `dv:<Univer uid>` | Univer's rule without `uid` and `ranges` |
+| `conditional-format` | `cf:<Univer cfId>` | `{ stopIfTrue, rule }` |
+
+- **`order`** is the position in Univer's list: a validation's index, a conditional format's
+  priority (0 first). The filter's is 0.
+- **Formulas go through the codec** (`mapRuleFormulas`), scoped to the **first cell of the rule's
+  first range** — Excel's convention for relative references in a rule. Only the places that hold a
+  formula are mapped: a validation's `formula1`/`formula2` when they start with `=` (a typed list
+  such as `Yes,No` is left alone), a conditional format's formula rule, and a colour scale's, data
+  bar's or icon set's value of type `formula`. A text rule that matches `=A1` is text, not a
+  reference.
+- **An item id is a plain name** (`FEATURE_ITEM_ID`); a rule Univer names otherwise is not stored.
+- `storedFeatureRule` turns Univer's form into a stored rule; `featureRulesFromDoc` turns stored
+  rules back into Univer's form at the current positions; `writeFeatureRules` stores a list, which
+  is what an import does.
+
+How the binding keeps Univer and these rules equal is
+[`components/spreadsheets`](../../components/spreadsheets/README.md#filters-validation-and-conditional-formatting).
+
+### In and out of `.xlsx`
+
+`featuresFromExcel` reads a sheet's validations, conditional formats and auto-filter into Univer's
+form; `featuresToExcel` writes them back. Univer's form is the pivot, so an import stores exactly
+what the editor would have.
+
+- **Validation**: list, whole, decimal, date, time, text length and custom, with operators,
+  messages and error style. ExcelJS reads a validation per cell; the cells sharing one are joined
+  back into ranges (`cellsToRanges`). A typed list (`"Paid,Pending"`) becomes `Paid,Pending`, a
+  reference or a formula keeps its `=`. An export writes at most 100 000 validated cells.
+- **Conditional formatting**, in priority order: a formula rule; *cell is* with numbers (with
+  references it becomes the equivalent formula); top/bottom *n*; above or below average;
+  duplicates and uniques; colour scales; data bars; icon sets (Excel's thresholds turned into
+  Univer's highest-first list, `reverse` kept). Excel stores the formula of a text or date-period
+  rule, so those come in as formula rules. On the way out, a text rule and a duplicate or unique rule
+  are written as the formula Excel evaluates, because ExcelJS cannot write those types.
+- **Fill and font** of a rule come in and go out as Excel's differential formats: bold, italic,
+  underline, strike, text colour, fill colour.
+- **A filter's range** comes in and goes out; **its criteria do not**, because ExcelJS reads only
+  the range. The rows it hid are not hidden in the file.
+- **Not carried**, and counted on import: a rule with a value of type `formula` in a scale, bar or
+  icon set (ExcelJS reads that value as a number), Excel's 2010 icon sets (`3Stars`, `3Triangles`,
+  `5Boxes`) and Univer's own (`_5Felling`), and anything else neither side can say.
+
+## A formula in the person's syntax
+
+**What is stored, synced and evaluated is always canonical**: `.` for decimals, `,` between
+arguments, English function names — Univer's syntax and Excel's file format. Only what a person
+sees in the cell editor and types into it is in their own syntax, which `localizeFormula` and
+`canonicalizeFormula` translate (`FormulaSyntax`: the decimal sign, and optionally `FunctionNames`).
+
+- **With a decimal comma**, arguments are separated by `;`, decimals use `,`, and in an array
+  constant columns are separated by `\` (rows stay `;`): `=SUM({1,2.5;3,4})` reads
+  `=SOMA({1\2,5;3\4})`.
+- **Function names** are renamed only where they are called (`NAME(`), plus `TRUE` and `FALSE`;
+  a defined name, a sheet name or a reference that looks like a name is left alone. Typing is
+  case-insensitive. A name the table does not know is kept as typed, so English always works.
+- **Left exactly as written**: string literals, quoted sheet names, structured references in
+  brackets, and everything that is not a number, a separator or a function name.
+- Error literals (`#REF!`, `#N/A`) and the values Univer computes stay in English.
+
+`formula-locale.test.ts` round-trips each case both ways.
+
+## Regional settings
+
+A spreadsheet carries its own country, date, time and number formats, currency and function
+language (`SpreadsheetRegional`, [`lib/regional`](../regional/README.md)) under `meta.regional`, as
+one plain object. It is sealed with the rest of the document and synced like any edit, so everyone
+in the spreadsheet types and reads it the same way; two people changing it at once keep the last
+write, which for a handful of choices made rarely is the right trade over a map per field.
+
+- **`readSheetRegional(doc, account)`** is what the editor uses: the stored settings, each field
+  checked by `parseSpreadsheetRegional`, or `spreadsheetDefaults(account)` when there are none — so
+  a spreadsheet made before this existed follows the account until someone changes it.
+- **Stamped at creation**: `newSpreadsheetDoc(regional)`, `createSpreadsheet(context, regional)` and
+  `importSpreadsheet(fileName, bytes, regional)` write them into the first snapshot, from the
+  account's formats.
+- **Kept by a rebuild**: `rebuildSpreadsheet` copies `meta` whole.
+- **Never touches what is stored in cells**: formulas and numbers stay canonical (below); only the
+  editor's view of them changes.
+
+`sheet-regional.test.ts` covers the fallback, stamping, sync between replicas, rebuild and import.
 
 ## Printing
 
@@ -256,10 +357,9 @@ sits in and a `WorkbookIndex` (every sheet's axes and names). The real one is `F
 Kept by the converter: values, formulas, rich text, styles of cells, rows and columns, row
 heights, column widths, hidden rows and columns, merges, the freeze, tab colour, hidden sheets,
 gridlines and their colour, right-to-left, the sheet's default style, default sizes and sheet
-order. Defined names are not in `IWorkbookData`'s sheets; the binding pushes them into Univer
-once the unit exists. **Not yet kept**: Univer's `resources`
-(filters, validation, conditional formatting, defined names), which the binding maps onto
-`rules` per feature, and view state (zoom, scroll), which is not content.
+order. Univer's `resources` — defined names, filters, validation, conditional formatting — are not
+in `IWorkbookData`'s sheets: the binding pushes them into Univer once the unit exists. View state
+(zoom, scroll) is not content and is not kept.
 
 ## Formulas
 
@@ -343,6 +443,7 @@ the 8 387 584 allowed, so the bound is about 200 000 non-empty cells of ordinary
   overhead per cell, the content's size, a formula's references at the size of their stored
   tokens, a style, and `OVERWRITTEN_CELL_BYTES` for each cell a write replaces. The tests check
   each against the real encoded size for five shapes of sheet: never under, never 60 % over.
+- **History is shed only by a rebuild** ([below](#rebuilding-without-the-history)).
 - `checkCapacity(used, added, largestCell)` refuses with `workbook-full`, or with
   `cell-too-large` for one cell over `MAX_CELL_BYTES` (64 KiB), which a delta could not carry.
   The binding uses it before every write; an import must call it with `estimateWorkbookBytes`
@@ -356,9 +457,52 @@ the 8 387 584 allowed, so the bound is about 200 000 non-empty cells of ordinary
 An empty default sheet (1 000 × 26) is 29 KB. An open `Y.Doc` holds about 480 bytes of memory per
 cell.
 
+## Rebuilding without the history
+
+A CRDT keeps a trace of every value it replaced and every line it removed, so a sheet rewritten for
+months reaches the capacity bound with fewer cells than it shows. `rebuildSpreadsheet(doc)` writes
+the same spreadsheet into a fresh `Y.Doc` and leaves that behind.
+
+- **What it copies**: the live sheets in order, their live rows and columns **with the same ids**,
+  each line's properties, each cell of a live column, the sheet properties (freeze, page setup,
+  everything that is not structure), merges, every rule, defined names, `meta` (except
+  `replacedBy`), and only the styles something still names.
+- **What it drops**: removed rows and columns, removed sheets, overwritten values, unused styles.
+- **References to removed lines are restated first.** A stored formula or range can point at a
+  removed id — `#REF!`, or a range that shrank past it — and resolving that needs the id's place in
+  the old sequence. So every formula (cells, names, validation and conditional formats) is displayed
+  against the old document and stored again against the new one, and every range, merge, chart
+  anchor and filter column is resolved and anchored again on live ids. Each reads exactly as before;
+  `#REF!` stays `#REF!`.
+- **Checked by comparison**: `rebuild.test.ts` builds a sheet with all of the above, removes and
+  inserts lines under it, and requires the rebuilt document to read the same through
+  `toWorkbookData`, the charts, the print settings, the merges, the features and the names. A
+  sheet overwritten forty times shrinks to under a third of its size, within 10 % of the same
+  content typed once.
+
+**It makes a new item for every device** (`rebuildSpreadsheetItem`), because a device that still
+holds the old history would merge it straight back:
+
+1. **Only from a device that has caught up**: it flushes, polls, and refuses with
+   `RebuildNotSyncedError` unless the sync is `synced`, with nothing pending or uploading and no gap.
+2. Builds the snapshot, refusing with `RebuildTooLargeError` if even the content does not fit.
+3. Creates the item from it (`createDocumentFromSnapshot`) and moves it into the old one's folder.
+4. Writes `replacedBy` into the **old** document and flushes it, so a device that has the old one
+   open is told where the new one is.
+5. Moves the old item to the Trash.
+
+A failure of 3's folder move or of 5 still returns the new id, with `movedToFolder` and `trashed`
+saying what did not happen. Edits another device makes to the old copy after this — one that was
+offline — do not reach the new one: that is the price, and the screen says it before asking.
+
+`shouldOfferRebuild` offers it from 80 % of the snapshot ceiling (the last snapshot plus the log
+since), or whenever the capacity warns. `rebuildEstimate` measures both sizes, for the screen to say
+what a rebuild would save before doing it.
+
 ## A new spreadsheet, and its preview
 
-`newSpreadsheetDoc` is a marked spreadsheet with one sheet, *Sheet1*, of 1 000 × 26.
+`newSpreadsheetDoc` is a marked spreadsheet with one sheet, *Sheet1*, of 1 000 × 26, with its
+regional settings when given.
 `createSpreadsheet` creates the item **with that state as its snapshot**, through
 `createDocumentFromSnapshot`, so the first sheet exists before any device opens it — two devices
 seeding an empty item at once would each create a *Sheet1*.
@@ -370,7 +514,7 @@ dropped.
 
 ## Files in and out
 
-`importSpreadsheet(fileName, bytes)` turns an `.xlsx`, `.csv`, `.tsv` or `.txt` file into the
+`importSpreadsheet(fileName, bytes, regional?)` turns an `.xlsx`, `.csv`, `.tsv` or `.txt` file into the
 snapshot of a new spreadsheet, **checking the capacity before anything is created**: the estimate
 first (`estimateWorkbookBytes` → `checkCapacity`), then the real encoded size, either of which
 throws `ImportTooLargeError`. The title is the file name without its extension; defined names are
@@ -411,8 +555,8 @@ number formats, merges, frozen panes, column widths and row heights, hidden rows
 sheets, tab colours, gridlines, right-to-left, and sheet order.
 
 **Lost, and counted** in the `InterchangeReport` the import returns (and the screen says): comments,
-images, charts, tables' formatting, pivot tables, data validation and conditional formatting (until
-147.13 binds them), mixed formatting inside one cell (the text is kept), links (the text is kept),
+images, charts, tables' formatting, pivot tables, the data validation and conditional formatting
+[the converter cannot carry](#in-and-out-of-xlsx), mixed formatting inside one cell (the text is kept), links (the text is kept),
 theme colours (Excel's default text colour is not counted), gradient fills, and array formulas
 (kept as ordinary ones).
 
@@ -458,3 +602,8 @@ every display rule, three concurrent cases with two `Y.Doc`s, shifting and share
 both ways: two insertions at one index, a value typed into a row inserted above, an edit to a
 removed row, concurrent moves of one row, a value and a style on one cell, overlapping merges, a
 sheet removed while moved, and a range shrinking from a removal made on another device.
+`rebuild.test.ts` and `rebuild-item.test.ts` cover the rebuild and the item flow against the fake
+document server. `print.test.ts` covers what printing stores and the pagination. `features.test.ts` covers rule
+ids and which formulas are mapped; `xlsx-features.test.ts` brings the corpus' validation and
+conditional formats in, and round-trips validations, every kind of conditional format the export
+writes, and a filter.

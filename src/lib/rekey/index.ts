@@ -1,3 +1,5 @@
+import { PREFERENCES_SCOPE, resealPreferences } from '@/lib/preferences';
+import { browserCountry } from '@/lib/regional';
 import { request } from '@/lib/api';
 import { requireToken, type AuthedContext } from '@/lib/context';
 import { listCredentialsMeta } from '@/lib/credentials';
@@ -32,6 +34,7 @@ export interface RekeyOutcome {
   requested: number;
   rekeyed: number;
   folders?: number;
+  preferences?: number;
 }
 
 export interface FolderRekeyOutcome {
@@ -199,6 +202,13 @@ async function rewrapFolders(context: AuthedContext, scope: DekScope): Promise<n
   return undefined;
 }
 
+async function resealAccountPreferences(context: AuthedContext, scope: DekScope): Promise<number | undefined> {
+  if (scope !== PREFERENCES_SCOPE) {
+    return undefined;
+  }
+  return (await resealPreferences(context, browserCountry())) ? 1 : 0;
+}
+
 export async function rewrapAfterRotation(
   context: AuthedContext,
   scopes: readonly string[],
@@ -211,7 +221,12 @@ export async function rewrapAfterRotation(
   for (const scope of wanted) {
     const outcome = await rewrapScope(context, scope);
     const folders = await rewrapFolders(context, scope);
-    outcomes.push(folders === undefined ? outcome : { ...outcome, folders });
+    const preferences = await resealAccountPreferences(context, scope);
+    outcomes.push({
+      ...outcome,
+      ...(folders === undefined ? {} : { folders }),
+      ...(preferences === undefined ? {} : { preferences }),
+    });
   }
 
   return outcomes;

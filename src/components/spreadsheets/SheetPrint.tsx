@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { createPortal } from 'react-dom';
 import type * as Y from 'yjs';
 import { PRINT_LABELS } from '@/lib/app';
-import { defaultPaperFor, paperPageRule, pixelsFromMillimetres, type PaperSize } from '@/lib/document-page';
+import { paperPageRule, pixelsFromMillimetres, type PaperSize } from '@/lib/document-page';
+import { useRegionalPreferences } from '@/components/session/usePreferences';
 import {
   PAGE_SETUP_STORED_BYTES,
   layoutPrint,
@@ -69,7 +70,8 @@ export default function SheetPrint({
   selection: GridRange | undefined;
   onClose: () => void;
 }) {
-  const [paper] = useState(() => defaultPaperFor(typeof navigator === 'undefined' ? undefined : navigator.language));
+  const { regional } = useRegionalPreferences();
+  const paper = regional.paper;
   const [model, setModel] = useState(() => readModel(doc, sheetId, reader, paper));
   const [zoom, setZoom] = useState(1);
   const scroller = useRef<HTMLDivElement>(null);
@@ -82,6 +84,7 @@ export default function SheetPrint({
       timer = setTimeout(() => setModel(readModel(doc, sheetId, reader, paper)), REFRESH_DELAY_MS);
     };
     doc.on('afterTransaction', refresh);
+    refresh();
     return () => {
       clearTimeout(timer);
       doc.off('afterTransaction', refresh);

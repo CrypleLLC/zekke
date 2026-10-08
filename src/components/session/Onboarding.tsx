@@ -32,6 +32,7 @@ import {
   type PinFieldHandle,
 } from '@/components/ui';
 import { PIN_LENGTH } from '@/lib/pin';
+import { regionalDate } from '@/lib/regional';
 
 export default function Onboarding() {
   const { createAccount, enrolBrowser, enterVault, notice } = useZekke();
@@ -337,7 +338,7 @@ function TooManyDevices({
                   />
                   <span className="text-compact text-ink">
                     {describeScopes(parseScopeList(device.scopes))} · added{' '}
-                    {new Date(device.createdAt).toLocaleDateString()}
+                    {regionalDate(new Date(device.createdAt))}
                   </span>
                 </label>
               </li>

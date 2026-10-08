@@ -15,6 +15,7 @@ import { PanelFacts, SidePanel } from '@/components/shell/SidePanel';
 import type { TreeFolder } from '@/lib/folders';
 import type { FolderTreeState } from '@/components/folders/FolderBrowser';
 import { FolderDetailsPanel } from '@/components/folders/FolderDetailsPanel';
+import { regionalDateTime } from '@/lib/regional';
 
 export type DriveDetailsTarget = { kind: 'file'; id: string } | { kind: 'folder'; id: string };
 
@@ -61,7 +62,7 @@ export function FileDetails({
   const facts = [
     { label: 'Type', value: fileTypeLabel(file.kind, file.fullName, file.readable) },
     { label: 'Size', value: exactBytesLabel(file.trueBytes) },
-    ...(file.updatedAt === '' ? [] : [{ label: 'Modified', value: new Date(file.updatedAt).toLocaleString() }]),
+    ...(file.updatedAt === '' ? [] : [{ label: 'Modified', value: regionalDateTime(new Date(file.updatedAt)) }]),
     ...(file.status === '' ? [] : [{ label: 'Status', value: file.status }]),
   ];
 

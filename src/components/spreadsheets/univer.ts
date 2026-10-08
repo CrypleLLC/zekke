@@ -6,11 +6,18 @@ import {
   UniverInstanceType,
   mergeLocales,
 } from '@univerjs/core';
+import { UniverDataValidationPlugin } from '@univerjs/data-validation';
 import { UniverDocsPlugin } from '@univerjs/docs';
 import { UniverDocsUIPlugin } from '@univerjs/docs-ui';
 import { UniverFormulaEnginePlugin } from '@univerjs/engine-formula';
 import { UniverRenderEnginePlugin } from '@univerjs/engine-render';
 import { UniverSheetsPlugin } from '@univerjs/sheets';
+import { UniverSheetsConditionalFormattingPlugin } from '@univerjs/sheets-conditional-formatting';
+import { UniverSheetsConditionalFormattingUIPlugin } from '@univerjs/sheets-conditional-formatting-ui';
+import { UniverSheetsDataValidationPlugin } from '@univerjs/sheets-data-validation';
+import { UniverSheetsDataValidationUIPlugin } from '@univerjs/sheets-data-validation-ui';
+import { UniverSheetsFilterPlugin } from '@univerjs/sheets-filter';
+import { UniverSheetsFilterUIPlugin } from '@univerjs/sheets-filter-ui';
 import { UniverSheetsFormulaPlugin } from '@univerjs/sheets-formula';
 import { UniverSheetsFormulaUIPlugin } from '@univerjs/sheets-formula-ui';
 import { UniverSheetsNumfmtPlugin } from '@univerjs/sheets-numfmt';
@@ -21,6 +28,9 @@ import { UniverUIPlugin } from '@univerjs/ui';
 import designEnUS from '@univerjs/design/locale/en-US';
 import docsUIEnUS from '@univerjs/docs-ui/locale/en-US';
 import sheetsEnUS from '@univerjs/sheets/locale/en-US';
+import sheetsConditionalFormattingUIEnUS from '@univerjs/sheets-conditional-formatting-ui/locale/en-US';
+import sheetsDataValidationUIEnUS from '@univerjs/sheets-data-validation-ui/locale/en-US';
+import sheetsFilterUIEnUS from '@univerjs/sheets-filter-ui/locale/en-US';
 import sheetsFormulaEnUS from '@univerjs/sheets-formula/locale/en-US';
 import sheetsFormulaUIEnUS from '@univerjs/sheets-formula-ui/locale/en-US';
 import sheetsNumfmtUIEnUS from '@univerjs/sheets-numfmt-ui/locale/en-US';
@@ -74,6 +84,9 @@ export function startSpreadsheetUniver(container: HTMLElement, doc: Y.Doc, unitI
         sheetsFormulaEnUS,
         sheetsFormulaUIEnUS,
         sheetsNumfmtUIEnUS,
+        sheetsFilterUIEnUS,
+        sheetsDataValidationUIEnUS,
+        sheetsConditionalFormattingUIEnUS,
       ),
     },
     theme: zekkeTheme(),
@@ -98,6 +111,13 @@ export function startSpreadsheetUniver(container: HTMLElement, doc: Y.Doc, unitI
   univer.registerPlugin(UniverSheetsNumfmtUIPlugin);
   univer.registerPlugin(UniverSheetsFormulaPlugin);
   univer.registerPlugin(UniverSheetsFormulaUIPlugin);
+  univer.registerPlugin(UniverSheetsFilterPlugin);
+  univer.registerPlugin(UniverSheetsFilterUIPlugin);
+  univer.registerPlugin(UniverDataValidationPlugin);
+  univer.registerPlugin(UniverSheetsDataValidationPlugin);
+  univer.registerPlugin(UniverSheetsDataValidationUIPlugin);
+  univer.registerPlugin(UniverSheetsConditionalFormattingPlugin);
+  univer.registerPlugin(UniverSheetsConditionalFormattingUIPlugin);
 
   univer.createUnit(
     UniverInstanceType.UNIVER_SHEET,

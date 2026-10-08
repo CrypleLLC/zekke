@@ -186,6 +186,19 @@ export function ChartIcon(props: IconProps) {
   );
 }
 
+export function SettingsIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h10" />
+      <path d="M18 7h2" />
+      <path d="M4 17h4" />
+      <path d="M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
+    </Icon>
+  );
+}
+
 export function PrintIcon(props: IconProps) {
   return (
     <Icon {...props}>

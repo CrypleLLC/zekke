@@ -57,6 +57,7 @@ import {
   useWideLayout,
 } from './useMobileChrome';
 import { HorizontalRuler, VerticalRulers } from './PageRulers';
+import { useRegionalPreferences } from '@/components/session/usePreferences';
 import { TableContextMenu } from './TableContextMenu';
 import { useDocumentSync } from './useDocumentSync';
 import { DocumentImageHost, printDocument } from './imageHost';
@@ -151,6 +152,7 @@ function DocumentSurface({ id, doc, state }: { id: string; doc: YDoc; state: Syn
   const baseFont = useDocumentBaseFont(doc);
   const storedMargins = useDocumentPageMargins(doc);
   const [previewMargins, setPreviewMargins] = useState<PageMargins | null>(null);
+  const { regional } = useRegionalPreferences();
   const margins = previewMargins ?? storedMargins;
   const commitMargins = useCallback(
     (next: PageMargins) => {
@@ -352,6 +354,7 @@ function DocumentSurface({ id, doc, state }: { id: string; doc: YDoc; state: Syn
               onPreview={setPreviewMargins}
               onCommit={commitMargins}
               onCancel={cancelMargins}
+              measurement={regional.measurement}
             />
           )}
           <div ref={scroller} className="zekke-page-scroller flex justify-center-safe">
@@ -379,6 +382,7 @@ function DocumentSurface({ id, doc, state }: { id: string; doc: YDoc; state: Syn
                   onPreview={setPreviewMargins}
                   onCommit={commitMargins}
                   onCancel={cancelMargins}
+                  measurement={regional.measurement}
                 />
               )}
               <div

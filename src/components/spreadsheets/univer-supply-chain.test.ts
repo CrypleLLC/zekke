@@ -13,6 +13,9 @@ const SOURCES = [
   'memory-storage.ts',
   'private-text.ts',
   'remote-functions.ts',
+  'features.ts',
+  'chart-view.ts',
+  'print-source.ts',
 ];
 
 const PATTERNS: Record<string, RegExp> = {

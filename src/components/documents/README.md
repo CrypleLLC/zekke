@@ -284,6 +284,11 @@ In page view, [`PageRulers.tsx`](./PageRulers.tsx) draws two rulers:
   page's handles are in the tab order and the accessibility tree; the rest are the same sliders
   repeated for the pointer.
 
+**The rulers follow the account's units** ([`lib/regional`](../../lib/regional/README.md)): centimetres
+in metric, inches in imperial, with the handles snapping to ¼ in (⅛ with Alt, 1 in with Shift) and
+labelled in inches. The margins are still stored in millimetres, so a document reads the same to
+someone who uses the other system.
+
 The ruler button in the toolbar hides and shows both rulers. Like the view, it is the viewer's
 choice, remembered per browser by `readRulersShown` / `writeRulersShown`
 ([`lib/app`](../../lib/app/README.md)), shown by default, and disabled in continuous view, which has

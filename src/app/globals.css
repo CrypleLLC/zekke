@@ -1285,3 +1285,7 @@ body {
     break-after: auto;
   }
 }
+
+.zekke-sheet-host [data-u-comp="ribbon-header-menu"] {
+  display: none;
+}
