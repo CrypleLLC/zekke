@@ -81,27 +81,14 @@ export class FakeDocumentServer {
   transport(): DocumentTransport {
     return {
       fetchDocument: async () => this.record(),
-      fetchUpdates: async (_id, since, options) => {
+      fetchUpdates: async (_id, since) => {
         const updates = this.since(since);
-        assertContiguous(updates, options?.expectFollowing === false ? {} : { after: since });
-        return updates;
+        assertContiguous(updates);
+        return { updates, revision: this.revision, snapshotSeq: this.snapshotSeq };
       },
       pushUpdates: async (_id, updates) => this.append(updates),
       compact: async (_id, body) => this.compact(body.snapshot_ciphertext, body.through_seq),
       unwrapDek: async () => TEST_DOCUMENT_DEK.slice(),
-      listMeta: async () => [
-        {
-          id: this.id,
-          wrapped_dek: 'd3JhcA==',
-          key_generation: 1,
-          snapshot_seq: this.snapshotSeq,
-          latest_seq: this.latestSeq(),
-          revision: this.revision,
-          version: 'v1',
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-      ],
     };
   }
 }

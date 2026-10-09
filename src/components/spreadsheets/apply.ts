@@ -40,12 +40,14 @@ import {
 import type { Changes, SheetChanges } from './changes';
 import { WorkbookMirror, planAxis, planOrder, type SheetMirror } from './mirror';
 import type { UniverSurface } from './surface';
+import { reconcileFeatures, type FeatureModels } from './features';
 
 export interface ApplyContext {
   doc: Y.Doc;
   surface: UniverSurface;
   mirror: WorkbookMirror;
   codec: FormulaCodec;
+  features?: FeatureModels;
 }
 
 type CellMatrix = Record<number, Record<number, ICellData>>;
@@ -78,6 +80,10 @@ export function applyChanges(context: ApplyContext, changes: Changes): void {
   if (structural) {
     refreshFormulas(context);
   }
+  const ruleSheets = structural
+    ? context.mirror.order
+    : [...changes.bySheet].filter(([, sheet]) => sheet.rules).map(([sheetId]) => sheetId);
+  reconcileAllFeatures(context, ruleSheets);
   if (changes.names || structural) {
     reconcileNames(context);
   }
@@ -526,5 +532,17 @@ export function reconcileNames(context: ApplyContext): void {
       comment: name.comment,
       hidden: name.hidden,
     });
+  }
+}
+
+export function reconcileAllFeatures(context: ApplyContext, sheetIds: readonly string[] = context.mirror.order): void {
+  const { features } = context;
+  if (features === undefined) {
+    return;
+  }
+  for (const sheetId of sheetIds) {
+    if (context.mirror.sheets.has(sheetId)) {
+      reconcileFeatures(features, context.doc, sheetId, context.codec);
+    }
   }
 }

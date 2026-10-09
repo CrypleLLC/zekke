@@ -7,6 +7,7 @@ import AccountScreen from './AccountScreen';
 import PlanScreen from '@/components/plan/PlanScreen';
 import DevicesScreen from './DevicesScreen';
 import PinScreen from './PinScreen';
+import RegionScreen from './RegionScreen';
 import SharingScreen from '@/components/sharing/SharingScreen';
 import UsernameScreen from './UsernameScreen';
 import { Modal } from '@/components/modal';
@@ -16,6 +17,7 @@ const PANELS: Record<SettingsTabId, () => React.JSX.Element> = {
   devices: DevicesScreen,
   username: UsernameScreen,
   pin: PinScreen,
+  region: RegionScreen,
   plan: PlanScreen,
   account: AccountScreen,
 };
@@ -28,7 +30,9 @@ export default function SettingsModal({
   initialTab?: SettingsTabId;
 }) {
   const { holds } = useZekke();
-  const tabs = SETTINGS_TABS.filter((entry) => entry.id !== 'sharing' || holds('sharing'));
+  const tabs = SETTINGS_TABS.filter(
+    (entry) => (entry.id !== 'sharing' || holds('sharing')) && (entry.id !== 'region' || holds('documents')),
+  );
   const [tab, setTab] = useState<SettingsTabId>(
     tabs.find((entry) => entry.id === initialTab)?.id ?? tabs[0].id,
   );

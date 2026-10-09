@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useZekke } from './ZekkeProvider';
 import Onboarding from './Onboarding';
 import Unlock from './Unlock';
+import RegionalScope from './RegionalScope';
 import { Spinner } from '@/components/ui';
 
 export function WelcomeLayout({ width, children }: { width: string; children: ReactNode }) {
@@ -53,5 +54,5 @@ export default function SessionGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <RegionalScope>{children}</RegionalScope>;
 }

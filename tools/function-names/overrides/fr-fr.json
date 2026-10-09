@@ -1,0 +1,286 @@
+{
+ "FIND": {
+  "name": "FIND",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FINDB": {
+  "name": "FINDB",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "TYPE": {
+  "name": "TYPE",
+  "why": "the French article is empty of names; TYPE kept as written"
+ },
+ "ACOS": {
+  "name": "ACOS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ASIN": {
+  "name": "ASIN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN": {
+  "name": "ATAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "ATAN2": {
+  "name": "ATAN2",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAUSS": {
+  "name": "GAUSS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LAMBDA": {
+  "name": "LAMBDA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LET": {
+  "name": "LET",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MAP": {
+  "name": "MAP",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "PEARSON": {
+  "name": "PEARSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "SEQUENCE": {
+  "name": "SEQUENCE",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "STDEVA": {
+  "name": "STDEVA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "STDEVPA": {
+  "name": "STDEVPA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR": {
+  "name": "VAR",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.S": {
+  "name": "VAR.S",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARA": {
+  "name": "VARA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VARPA": {
+  "name": "VARPA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "Z.TEST": {
+  "name": "Z.TEST",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MINUTE": {
+  "name": "MINUTE",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "INDEX": {
+  "name": "INDEX",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DATEDIF": {
+  "name": "DATEDIF",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "UNIQUE": {
+  "name": "UNIQUE",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CONVERT": {
+  "name": "CONVERT",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "FACT": {
+  "name": "FACT",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "SEC": {
+  "name": "SEC",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AND": {
+  "name": "ET",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CONCATENATE": {
+  "name": "CONCATENER",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "DATE": {
+  "name": "DATE",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "EXPAND": {
+  "name": "ETENDRE",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "OR": {
+  "name": "OU",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "SWITCH": {
+  "name": "SI.MULTIPLE",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "TEXT": {
+  "name": "TEXTE",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "VLOOKUP": {
+  "name": "RECHERCHEV",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "NOT": {
+  "name": "NON",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CHOOSECOLS": {
+  "name": "CHOISIRCOLS",
+  "why": "the article and the index name it CHOISIRCOLS; CHOISIRLIGNES is CHOOSEROWS"
+ },
+ "IFS": {
+  "name": "SI.CONDITIONS",
+  "why": "the article names it SI.CONDITIONS; SI is IF"
+ },
+ "T.DIST": {
+  "name": "LOI.STUDENT.N",
+  "why": "the example formulas use LOI.STUDENT.N; LOI.STUDENT is TDIST"
+ },
+ "RANDARRAY": {
+  "name": "RANDARRAY",
+  "why": "the syntax line gives ALEA, which is RAND, and only the index names it otherwise: Microsoft’s French text does not establish a name: kept in English"
+ },
+ "ARABIC": {
+  "name": "ARABIC",
+  "why": "the article is untranslated: Microsoft’s French text does not establish a name: kept in English"
+ },
+ "ARRAYTOTEXT": {
+  "name": "TABLEAU.EN.TEXTE",
+  "why": "the article and its examples name it TABLEAU.EN.TEXTE; the syntax line was left in English"
+ },
+ "ISODD": {
+  "name": "ISODD",
+  "why": "the IS article gives only the hybrid ESTEVEN beside it and leaves ISODD in English: Microsoft’s French text does not establish a name: kept in English"
+ },
+ "ISERR": {
+  "name": "ESTERR",
+  "why": "named in the IS functions article"
+ },
+ "ISNONTEXT": {
+  "name": "ESTNONTEXTE",
+  "why": "named in the IS functions article"
+ },
+ "ISREF": {
+  "name": "ESTREF",
+  "why": "named in the IS functions article"
+ },
+ "ISTEXT": {
+  "name": "ESTTEXTE",
+  "why": "named in the IS functions article"
+ },
+ "FORECAST.LINEAR": {
+  "name": "PREVISION.LINEAIRE",
+  "why": "the forecast-and-forecast-linear article names it in its syntax line"
+ },
+ "CEILING.MATH": {
+  "name": "PLAFOND.MATH",
+  "why": "the example formulas use PLAFOND.MATH; the syntax line splits it with markup"
+ },
+ "ERFC.PRECISE": {
+  "name": "ERFC.PRECIS",
+  "why": "the syntax line says ERFC.PRECIS; the example spells it out (ERFC.PRECISION)"
+ },
+ "GAMMALN.PRECISE": {
+  "name": "LNGAMMA.PRECIS",
+  "why": "the syntax line says LNGAMMA.PRECIS; the example spells it out (LNGAMMA.PRECISION)"
+ },
+ "YEAR": {
+  "name": "ANNEE",
+  "why": "the example formulas use ANNEE, as French Excel writes its names without accents (DUREE, FREQUENCE)"
+ },
+ "PERCENTILE.EXC": {
+  "name": "PERCENTILE.EXC",
+  "why": "the syntax line is machine-translated (CENTILE. EXC) and nothing else names it: Microsoft’s French text does not establish a name: kept in English"
+ },
+ "TOCOL": {
+  "name": "DANSCOL",
+  "why": "the localized index names it DANSCOL, matching its sibling TOROW = DANSLIGNE in its article; its own article was left in English"
+ },
+ "WRAPROWS": {
+  "name": "ORGA.LIGNES",
+  "why": "the localized index names it ORGA.LIGNES, matching its sibling WRAPCOLS = ORGA.COLS in its article; its own article was left in English"
+ },
+ "AGGREGATE": {
+  "name": "AGREGAT",
+  "why": "the localized index says AGRÉGAT, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "BITXOR": {
+  "name": "BITOUEXCLUSIF",
+  "why": "the localized index says BITOUX, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "DECIMAL": {
+  "name": "DECIMAL",
+  "why": "only the localized index names it (DÉCIMAL), and the index is machine-translated in many entries: kept in English"
+ },
+ "DISC": {
+  "name": "TAUX.ESCOMPTE",
+  "why": "the localized index says DISQUE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "DURATION": {
+  "name": "DUREE",
+  "why": "the localized index says DURÉE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "EDATE": {
+  "name": "MOIS.DECALER",
+  "why": "the localized index says MOISSONNER, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "FIXED": {
+  "name": "CTXT",
+  "why": "the localized index says RÉSOLU, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "FREQUENCY": {
+  "name": "FREQUENCE",
+  "why": "the localized index says FRÉQUENCE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "HYPGEOMDIST": {
+  "name": "LOI.HYPERGEOMETRIQUE",
+  "why": "the localized index says HYPGEOMDISTE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "ISOWEEKNUM": {
+  "name": "NO.SEMAINE.ISO",
+  "why": "the localized index says NUM.ISOSEMAINE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "MINIFS": {
+  "name": "MIN.SI.ENS",
+  "why": "the localized index says MIN.SI, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "POWER": {
+  "name": "PUISSANCE",
+  "why": "the localized index says ALIMENTATION, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "REDUCE": {
+  "name": "REDUCE",
+  "why": "only the localized index names it (REDUIRE), and the index is machine-translated in many entries: kept in English"
+ },
+ "TAKE": {
+  "name": "TAKE",
+  "why": "only the localized index names it (PRENDRE), and the index is machine-translated in many entries: kept in English"
+ },
+ "TIME": {
+  "name": "TEMPS",
+  "why": "the localized index says HEURE, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ },
+ "VALUE": {
+  "name": "CNUM",
+  "why": "the localized index says VALEUR, but it is machine-translated in many entries (POWER as ALIMENTATION, EDATE as MOISSONNER); the article’s name stands"
+ }
+}

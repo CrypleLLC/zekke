@@ -105,6 +105,11 @@ export const ACTIONS = {
     signer: 'device',
     pinProof: false,
   },
+  'preferences-update': {
+    args: ['expected_revision', 'ciphertext_digest'],
+    signer: 'device',
+    pinProof: false,
+  },
 } as const satisfies Record<string, ActionSpec>;
 
 export type ActionLabel = keyof typeof ACTIONS;

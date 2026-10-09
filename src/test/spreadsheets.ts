@@ -10,7 +10,11 @@ import {
   type ICellData,
   type Workbook,
 } from '@univerjs/core';
+import { UniverDataValidationPlugin } from '@univerjs/data-validation';
 import { UniverFormulaEnginePlugin } from '@univerjs/engine-formula';
+import { UniverSheetsConditionalFormattingPlugin } from '@univerjs/sheets-conditional-formatting';
+import { UniverSheetsDataValidationPlugin } from '@univerjs/sheets-data-validation';
+import { UniverSheetsFilterPlugin } from '@univerjs/sheets-filter';
 import { SetRangeValuesCommand, UniverSheetsPlugin } from '@univerjs/sheets';
 import { UniverSheetsFormulaPlugin } from '@univerjs/sheets-formula';
 import sheetsEn from '@univerjs/sheets/locale/en-US';
@@ -45,7 +49,11 @@ export function disposeDevices(): void {
   }
 }
 
-export function startUniver(doc: Y.Doc): Univer {
+export interface DeviceOptions extends Partial<SpreadsheetBindingOptions> {
+  features?: boolean;
+}
+
+export function startUniver(doc: Y.Doc, features = false): Univer {
   const univer = new Univer({
     locale: LocaleType.EN_US,
     locales: { [LocaleType.EN_US]: { ...sheetsEn } },
@@ -54,12 +62,18 @@ export function startUniver(doc: Y.Doc): Univer {
   univer.registerPlugin(UniverFormulaEnginePlugin, { notExecuteFormula: false });
   univer.registerPlugin(UniverSheetsPlugin);
   univer.registerPlugin(UniverSheetsFormulaPlugin);
+  if (features) {
+    univer.registerPlugin(UniverSheetsFilterPlugin);
+    univer.registerPlugin(UniverDataValidationPlugin);
+    univer.registerPlugin(UniverSheetsDataValidationPlugin);
+    univer.registerPlugin(UniverSheetsConditionalFormattingPlugin);
+  }
   univer.createUnit(UniverInstanceType.UNIVER_SHEET, toWorkbookData(doc, IDENTITY, FORMULA_CODEC));
   return univer;
 }
 
-export function device(doc: Y.Doc, options: Partial<SpreadsheetBindingOptions> = {}): Device {
-  const univer = startUniver(doc);
+export function device(doc: Y.Doc, { features = false, ...options }: DeviceOptions = {}): Device {
+  const univer = startUniver(doc, features);
   const binding = new SpreadsheetBinding({ univer, unitId: UNIT, doc, ...options });
   const created: Device = {
     doc,
@@ -72,7 +86,7 @@ export function device(doc: Y.Doc, options: Partial<SpreadsheetBindingOptions> =
   return created;
 }
 
-export function pair(rows = 20, columns = 6): [Device, Device] {
+export function pair(rows = 20, columns = 6, options: DeviceOptions = {}): [Device, Device] {
   const seed = new Y.Doc();
   markSpreadsheet(seed);
   createSheet(seed, { name: 'Sheet1', rows, columns });
@@ -81,7 +95,7 @@ export function pair(rows = 20, columns = 6): [Device, Device] {
   const second = new Y.Doc();
   Y.applyUpdate(first, update);
   Y.applyUpdate(second, update);
-  return [device(first), device(second)];
+  return [device(first, options), device(second, options)];
 }
 
 export function sync(...devicesToSync: Device[]): void {

@@ -77,7 +77,9 @@ export function useDocumentSync(id: string, setup: DocumentSyncSetup = DOCUMENT_
         if (isUntouched(engine.doc)) {
           setup.seedUntouched?.(engine.doc);
         }
-        engine.startPolling();
+        if (document.visibilityState === "visible") {
+          engine.startPolling();
+        }
         setSync(engine);
       })
       .catch((cause) => {
@@ -103,7 +105,9 @@ export function useDocumentSync(id: string, setup: DocumentSyncSetup = DOCUMENT_
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         void sync.poll().catch(() => undefined);
+        sync.startPolling();
       } else {
+        sync.stopPolling();
         void sync.flush().catch(() => undefined);
       }
     };

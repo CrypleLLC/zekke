@@ -2,6 +2,7 @@ import { BillingError, type BillingProvider, type PriceRecord } from '@/lib/bill
 import type { PlanRecord } from '@/lib/users';
 import { notificationDate, planName } from './notifications';
 import { formatBytes } from './vault';
+import { regionalCount } from '@/lib/regional';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -180,7 +181,7 @@ export function quoteCountdown(expiresAt: string, now: Date = new Date()): strin
 }
 
 export function satsLabel(sats: number): string {
-  return `${sats.toLocaleString('en-US')} sats`;
+  return `${regionalCount(sats)} sats`;
 }
 
 export function planChanged(before: PlanRecord | undefined, after: PlanRecord | undefined): boolean {

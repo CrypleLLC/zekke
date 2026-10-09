@@ -1,6 +1,7 @@
 import { SNAPSHOT_RAW_BYTES_LIMIT, cellsInBytes } from "@/lib/spreadsheets/capacity";
 import { ImportTooLargeError, UnsupportedFormatError } from "@/lib/spreadsheets/interchange";
 import type { InterchangeReport, LostFeature } from "@/lib/spreadsheets/xlsx";
+import { regionalCount } from '@/lib/regional';
 
 export const SPREADSHEET_FILE_LABELS = {
   import: "Import a spreadsheet…",
@@ -30,7 +31,7 @@ export function lostFeaturesLabel(report: InterchangeReport): string | undefined
     .filter(([, count]) => count > 0)
     .map(([feature, count]) => {
       const [one, many] = LOST_FEATURE_NOUNS[feature];
-      return `${count.toLocaleString()} ${count === 1 ? one : many}`;
+      return `${regionalCount(count)} ${count === 1 ? one : many}`;
     });
   return parts.length === 0 ? undefined : parts.join(", ");
 }
@@ -48,7 +49,7 @@ export function importErrorMessage(error: unknown): string | undefined {
   if (error instanceof ImportTooLargeError) {
     return error.refusal.reason === "cell-too-large"
       ? "That file has a cell too large to store. Split its content across several cells and import it again."
-      : `That file is larger than a spreadsheet can hold, which is about ${cellsInBytes(SNAPSHOT_RAW_BYTES_LIMIT).toLocaleString()} filled cells. Nothing was created.`;
+      : `That file is larger than a spreadsheet can hold, which is about ${regionalCount(cellsInBytes(SNAPSHOT_RAW_BYTES_LIMIT))} filled cells. Nothing was created.`;
   }
   return undefined;
 }

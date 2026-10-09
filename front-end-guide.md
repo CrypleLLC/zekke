@@ -145,7 +145,7 @@ signature:
 | `POST /sign-up` / `POST /sign-in` / `POST /auth/verify` | ✅ safe                      | A new token; `/sign-up` reports `200` the second time.                                                                                                               |
 | `POST /secrets`                                         | ✅ safe **if you sent `id`** | `200` and the stored item, identical to the first response. Without `id`: ⚠️ a second item with a new id, and nothing dedupes them.                                  |
 | `DELETE /secrets/{id}`                                  | ⚠️ `404 NOT_FOUND`           | The first call succeeded. Treat `404` on a retry as **success**, not as a missing resource.                                                                          |
-| `DELETE /users`                                         | ⚠️ `401 INVALID_CREDENTIALS` | Not `404`: the account row is gone, so the retry fails at the account lookup before anything else. Treat it as success — the token is now useless anyway.            |
+| `DELETE /users`                                         | ⚠️ `401 UNAUTHORIZED`        | The deletion began with the first call, and the account's tokens are refused from then on. Treat it as success — the token is now useless anyway.                  |
 | `DELETE /secrets` (batch)                               | ✅ safe                      | `200` with `deleted: 0` — `requested` still counts the ids you sent.                                                                                                 |
 | `POST /secrets/{id}/restore`                            | ⚠️ `404 NOT_FOUND`           | The first call restored it. Treat `404` on a retry as **success**; the secret is back in `GET /secrets`.                                                             |
 | `DELETE /secrets/deleted` (purge)                       | ✅ safe                      | `200` with `purged: 0` — the first call already destroyed them.                                                                                                      |
@@ -280,7 +280,7 @@ Authorization: Bearer <access_token>
 | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | "Log out"                       | Delete the token. To make the device forget the account for good, remove it (`device-remove` of itself). |
 | Another device removes this one | **Every token of this device is `401 UNAUTHORIZED` on its next request.**                                |
-| `DELETE /users`                 | Every device is gone, so every token is `401 UNAUTHORIZED`.                                              |
+| `DELETE /users`                 | The account is deleting, so every token is `401 UNAUTHORIZED`.                                           |
 | Changing the PIN                | None.                                                                                                    |
 | Token expiry                    | Sign in again.                                                                                           |
 

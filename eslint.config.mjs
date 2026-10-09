@@ -87,7 +87,7 @@ const config = [
 
   // The one localStorage exemption: src/lib/app/icon-size.ts persists one
   // literal word naming how large a grid draws its icons, one naming whether
-  // the drive or documents is drawn as a grid or a list, one naming whether the
+  // the drive, documents or spreadsheets is drawn as a grid or a list, one naming whether the
   // document editor draws pages or continuous text, and one each saying its
   // rulers or its outline panel are hidden. All are view preferences with no
   // bearing on secrets, and losing them on every reload is the kind of small
@@ -117,12 +117,14 @@ const config = [
 
   // next/image optimises by fetching the source on the server. A drive thumbnail
   // and an image in the media viewer are blob: URLs of bytes decrypted in this
-  // tab, which no server can fetch and none may see, so <img> is the only option
+  // tab, and a printed chart is a data: URL of an SVG drawn from decrypted cells,
+  // which no server can fetch and none may see, so <img> is the only option
   // here rather than the lazy one.
   {
     files: [
       "src/components/drive/DriveScreen.tsx",
       "src/components/modal/MediaViewer.tsx",
+      "src/components/spreadsheets/SheetPrint.tsx",
     ],
     rules: {
       "@next/next/no-img-element": "off",

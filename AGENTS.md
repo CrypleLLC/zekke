@@ -166,6 +166,15 @@ npm run test:e2e  # vitest against a running API (ZEKKE_E2E_API, default http://
 npm run lint      # eslint, flat config
 ```
 
+**The e2e suite needs an API with room to spare.** Every test runs from one address, and one full
+run resolves usernames more than 30 times, the production budget per address and hour
+(`RATE_LIMIT_USERNAME_LIMIT`); `../api-general/docker-compose.yml` raises it to 300 for the local
+stack. The suite pushes plans through the billing route and runs the downgrade clock, so the API
+needs `BILLING_INTERNAL_TOKEN` and `FILES_INTERNAL_TOKEN` as the local compose sets them; a running
+`reconcile` may run the clock first, and the tests allow for it. `drive.e2e.ts` uploads 1 GiB
+(`ZEKKE_E2E_DRIVE_BYTES`) to an account it moves to `premium_1`; below about 330 MiB the dropped
+connection never happens, because it is cut after 40 parts of 8 MiB.
+
 CI runs typecheck, lint (`--max-warnings 0`) and tests.
 
 **Lint rules that exist because of the threat model**, each carrying its reason in
@@ -175,7 +184,7 @@ CI runs typecheck, lint (`--max-warnings 0`) and tests.
 - **`localStorage`, `sessionStorage` and `indexedDB` are blocked**, as globals and through
   `window`, `globalThis` and `self`. The exemptions:
   - `src/lib/app/icon-size.ts` — one word naming how large a grid draws its icons, one naming
-    whether the drive or documents is drawn as a grid or a list, one naming whether the
+    whether the drive, documents or spreadsheets is drawn as a grid or a list, one naming whether the
     document editor draws pages or continuous text, and one each saying its rulers or its outline
     panel are hidden;
   - `src/lib/device/store.ts` — the device record, in IndexedDB because only IndexedDB can store

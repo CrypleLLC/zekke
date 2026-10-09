@@ -382,6 +382,23 @@ carries its `kind` and, for a readable spreadsheet, the `grid` its miniature dra
   its sheets and, with counts, what did not come across (`lostFeaturesLabel`); `importErrorMessage`
   explains a refused file — wrong format, too large, a cell too large — without quoting anything
   from it, and `UNREADABLE_IMPORT` covers a file that would not parse.
+- `spreadsheet-charts.ts` is the chart panel's copy: `CHART_LABELS`, a name for each kind and each
+  series orientation, `CHART_NEEDS_RANGE` when there is nothing to chart, `chartHeadersLabel`, which
+  says first row or first column to match the orientation, and `chartAccessibleName` for the chart
+  on the grid.
+- `region.ts` is the regional settings' copy — the account's **Region** tab (`REGION_COPY`) and a spreadsheet's **Settings** menu (`SPREADSHEET_SETTINGS_COPY`, `FUNCTION_LANGUAGE_COPY`): the labels, an example of each date, time and number format,
+  `currencyLabel` (code and name), and `countryDefaultHint`, which says what the country uses when
+  the person chose otherwise, for an account field or a spreadsheet one.
+- `spreadsheet-rebuild.ts` is the rebuild's copy: the offer, the saving (`rebuildSavingLabel`, which
+  says when the size is content rather than history), what a rebuild costs given the account's
+  Trash retention, the two refusals, a partial outcome, and the notice on a copy that was rebuilt.
+- `spreadsheet-print.ts` is the print preview's copy: `PRINT_LABELS`, a name for each paper,
+  orientation, scale, margin preset and page order, the labels of repeated rows and columns and of a
+  break, and `pageCountLabel`, which gives the scale when it is not 100 % and says when the page
+  limit cut the print short.
+- `DOCUMENT_SHELVES` is what tells the Documents and Spreadsheets tabs apart — the kind each shows,
+  its nouns, its empty states and the `IconGrid` its size and layout are remembered under
+  ([Two shelves, one domain](../../components/documents/README.md#two-shelves-one-domain)).
 
 ## The notes file grid
 
@@ -546,7 +563,7 @@ how far over the limit a paste landed instead of just refusing.
 ## How large the three grids draw themselves
 
 `icon-size.ts` is the whole zoom control as data. One vocabulary of five steps — `tiny`, `small`,
-`medium`, `large`, `huge`, shown as _Extra small_ to _Extra large_ — serves the drive, notes and documents, because they are three views of the same
+`medium`, `large`, `huge`, shown as _Extra small_ to _Extra large_ — serves the drive, notes, documents and spreadsheets, because they are views of the same
 idea and a user who has learned the control on one should not meet a different one on the next.
 
 The steps carry **two geometries**, because the screens are not drawing the same kind of thing:

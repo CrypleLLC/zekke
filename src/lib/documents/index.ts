@@ -2,7 +2,6 @@ import { MAX_PAGE_LIMIT } from '@/lib/api';
 import {
   compactDocument,
   getDocument,
-  listDocumentsMeta,
   listUpdatesSince,
   appendUpdates,
   type DocumentsContext,
@@ -14,15 +13,10 @@ import type { DocumentTransport } from './sync';
 export function apiTransport(context: DocumentsContext): DocumentTransport {
   return {
     fetchDocument: (id) => getDocument(context, id),
-    fetchUpdates: (id, since, options) =>
-      listUpdatesSince(context, id, since, {
-        limit: MAX_PAGE_LIMIT,
-        expectFollowing: options?.expectFollowing,
-      }),
+    fetchUpdates: (id, since) => listUpdatesSince(context, id, since, { limit: MAX_PAGE_LIMIT }),
     pushUpdates: (id, updates) => appendUpdates(context, id, updates),
     compact: (id, body) => compactDocument(context, id, body),
     unwrapDek: (document) => openDocumentDek(context, document),
-    listMeta: () => listDocumentsMeta(context),
     reportAttachments: async (id, ids) => {
       await putAttachmentReferences(context, id, ids);
     },

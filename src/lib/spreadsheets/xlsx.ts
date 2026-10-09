@@ -5,6 +5,8 @@ import { columnIndex, columnLetters } from './formulas';
 import { SHEET_ID_LENGTH, randomId } from './ids';
 import { DEFAULT_COLUMN_COUNT, DEFAULT_ROW_COUNT } from './sheets';
 import { canonicalJson, styleId, type StyleData } from './styles';
+import type { FeatureRule } from './features';
+import { featuresFromExcel, featuresToExcel, type FeatureLosses } from './xlsx-features';
 
 type ExcelJS = typeof ExcelJSNamespace;
 type Worksheet = ExcelJSNamespace.Worksheet;
@@ -35,6 +37,7 @@ export interface ImportedName {
 export interface ImportedWorkbook {
   workbook: IWorkbookData;
   names: ImportedName[];
+  features: Record<string, FeatureRule[]>;
   report: InterchangeReport;
 }
 
@@ -429,10 +432,6 @@ function sheetFromExcel(sheet: Worksheet, date1904: boolean, report: Interchange
   const tab = argbToRgb(sheet.properties.tabColor, report, false);
   if (tab !== undefined) data.tabColor = tab;
 
-  const validations = Object.values((sheet as unknown as { dataValidations?: { model?: Record<string, unknown> } }).dataValidations?.model ?? {});
-  count(report, 'dataValidations', new Set(validations.map((rule) => JSON.stringify(rule))).size);
-  const formattings = (sheet as unknown as { conditionalFormattings?: { rules?: unknown[] }[] }).conditionalFormattings ?? [];
-  count(report, 'conditionalFormats', formattings.reduce((total, entry) => total + (entry.rules?.length ?? 0), 0));
   count(report, 'images', sheet.getImages().length);
   return data;
 }
@@ -450,8 +449,11 @@ export async function readXlsx(
   const sheets: IWorkbookData['sheets'] = {};
   const sheetOrder: string[] = [];
   const styles: Record<string, IStyleData> = {};
+  const features: Record<string, FeatureRule[]> = {};
+  const losses: FeatureLosses = { dataValidations: 0, conditionalFormats: 0 };
   for (const sheet of book.worksheets) {
     const data = sheetFromExcel(sheet, date1904, report);
+    features[data.id as string] = featuresFromExcel(sheet, losses);
     for (const row of Object.values(data.cellData ?? {}) as Record<number, ICellData>[]) {
       for (const cell of Object.values(row)) {
         if (cell.s !== undefined && cell.s !== null && typeof cell.s === 'object') {
@@ -469,9 +471,13 @@ export async function readXlsx(
     .filter((entry) => entry.ranges.length > 0 && !entry.name.startsWith('_xlnm.'))
     .map((entry) => ({ name: entry.name, formula: entry.ranges.join(',') }));
 
+  count(report, 'dataValidations', losses.dataValidations);
+  count(report, 'conditionalFormats', losses.conditionalFormats);
+
   return {
     workbook: { id: identity.unitId, name: identity.name, appVersion: identity.appVersion, locale: identity.locale, styles, sheetOrder, sheets },
     names,
+    features,
     report,
   };
 }
@@ -492,7 +498,11 @@ function exportedCell(cell: ICellData): ExcelJSNamespace.CellValue {
   return cell.v;
 }
 
-export async function writeXlsx(workbook: IWorkbookData, names: readonly ExportedName[] = []): Promise<Uint8Array> {
+export async function writeXlsx(
+  workbook: IWorkbookData,
+  names: readonly ExportedName[] = [],
+  features: Readonly<Record<string, readonly FeatureRule[]>> = {},
+): Promise<Uint8Array> {
   const ExcelJS = await loadExcelJS();
   const book = new ExcelJS.Workbook();
   book.creator = 'Zekke';
@@ -550,6 +560,10 @@ export async function writeXlsx(workbook: IWorkbookData, names: readonly Exporte
         `${columnLetters(merge.startColumn)}${merge.startRow + 1}:${columnLetters(merge.endColumn)}${merge.endRow + 1}`,
       );
     }
+    featuresToExcel(sheet, features[sheetId] ?? [], {
+      rows: data.rowCount ?? DEFAULT_ROW_COUNT,
+      columns: data.columnCount ?? DEFAULT_COLUMN_COUNT,
+    });
   }
   for (const name of names) {
     book.definedNames.add(name.formula.replace(/^=/, ''), name.name);

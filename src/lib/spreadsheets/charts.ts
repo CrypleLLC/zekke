@@ -1,6 +1,7 @@
 import type { Axis } from './axis';
 import { readAxis } from './axis';
-import type { SheetMap } from './layout';
+import { ELEMENT_ID_LENGTH, freshIds } from './ids';
+import { rulesMap, type SheetMap } from './layout';
 import { anchorRange, type GridRange, type IdRange } from './ranges';
 import { readRules, writeRule } from './rules';
 
@@ -15,12 +16,16 @@ export const CHART_PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87b
 export const CHART_MAX_SERIES = CHART_PALETTE.length;
 export const CHART_INK = { primary: '#1f2937', secondary: '#4b5563', muted: '#9ca3af', grid: '#e5e7eb', surface: '#ffffff' };
 
+export const CHART_STORED_BYTES = 400;
+
 export interface ChartSettings {
   kind: ChartKind;
   title?: string;
   headers: boolean;
   series: SeriesOrientation;
 }
+
+export const DEFAULT_CHART_SETTINGS: ChartSettings = { kind: 'column', headers: true, series: 'columns' };
 
 export interface CellPosition {
   row: number;
@@ -157,12 +162,17 @@ export function writeChart(
   id: string,
   chart: { settings: ChartSettings; source: GridRange; anchor: GridAnchor },
   origin?: unknown,
-): void {
+): boolean {
   const anchored = chartRule(chart, readAxis(sheet, 'rows'), readAxis(sheet, 'columns'));
   if (anchored === undefined) {
-    return;
+    return false;
   }
   writeRule(sheet, { id, feature: CHART_FEATURE, ranges: [chart.source], body: anchored.body }, origin);
+  return true;
+}
+
+export function newChartId(sheet: SheetMap): string {
+  return freshIds(1, ELEMENT_ID_LENGTH, new Set(rulesMap(sheet).keys()))[0];
 }
 
 export function readCharts(sheet: SheetMap): ResolvedChart[] {
@@ -247,7 +257,7 @@ export function chartOption(settings: ChartSettings, grid: ChartValue[][]): Reco
     animation: false,
     title: settings.title ? { text: settings.title, left: 8, top: 4, textStyle: { color: CHART_INK.primary, fontSize: 14, fontWeight: 600 } } : undefined,
     legend,
-    tooltip: { trigger: settings.kind === 'pie' || settings.kind === 'scatter' ? 'item' : 'axis', confine: true },
+    tooltip: { trigger: settings.kind === 'pie' || settings.kind === 'scatter' ? 'item' : 'axis', confine: true, renderMode: 'richText' },
     textStyle: { fontFamily: 'Inter, system-ui, sans-serif' },
   };
 

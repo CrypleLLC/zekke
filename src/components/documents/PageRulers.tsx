@@ -3,12 +3,10 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent, RefObject } from 'react';
 import {
-  MARGIN_FINE_STEP_MM,
-  MARGIN_LARGE_STEP_MM,
   MARGIN_NAMES,
-  MARGIN_STEP_MM,
   PAGE_HEIGHT_MM,
   PAGE_WIDTH_MM,
+  RULER_UNITS,
   isVertical,
   marginLabel,
   maxMargin,
@@ -17,6 +15,7 @@ import {
   snapMargin,
   type MarginSide,
   type PageMargins,
+  type RulerSystem,
 } from '@/lib/document-page';
 
 export interface MarginControls {
@@ -25,6 +24,7 @@ export interface MarginControls {
   onPreview: (margins: PageMargins) => void;
   onCommit: (margins: PageMargins) => void;
   onCancel: () => void;
+  measurement?: RulerSystem;
 }
 
 export function HorizontalRuler({
@@ -71,7 +71,7 @@ export function HorizontalRuler({
       <div ref={ruler} className="zekke-ruler zekke-ruler-horizontal">
         <div className="zekke-ruler-margin" style={{ left: 0, width: scaled(margins.left, 'mm') }} />
         <div className="zekke-ruler-margin" style={{ right: 0, width: scaled(margins.right, 'mm') }} />
-        <RulerScale centimetres={PAGE_WIDTH_MM / 10} vertical={false} />
+        <RulerScale extent={PAGE_WIDTH_MM} system={controls.measurement ?? 'metric'} vertical={false} />
         <MarginHandle side="left" ruler={ruler} accessible {...controls} />
         <MarginHandle side="right" ruler={ruler} accessible {...controls} />
       </div>
@@ -103,15 +103,16 @@ function VerticalRuler({ accessible, ...controls }: MarginControls & { accessibl
     >
       <div className="zekke-ruler-margin" style={{ top: 0, height: scaled(margins.top, 'mm') }} />
       <div className="zekke-ruler-margin" style={{ bottom: 0, height: scaled(margins.bottom, 'mm') }} />
-      <RulerScale centimetres={PAGE_HEIGHT_MM / 10} vertical />
+      <RulerScale extent={PAGE_HEIGHT_MM} system={controls.measurement ?? 'metric'} vertical />
       <MarginHandle side="top" ruler={ruler} accessible={accessible} {...controls} />
       <MarginHandle side="bottom" ruler={ruler} accessible={accessible} {...controls} />
     </div>
   );
 }
 
-function RulerScale({ centimetres, vertical }: { centimetres: number; vertical: boolean }) {
-  const labels = Array.from({ length: Math.floor(centimetres) - 1 }, (_, index) => index + 1);
+function RulerScale({ extent, system, vertical }: { extent: number; system: RulerSystem; vertical: boolean }) {
+  const { unit, millimetres } = RULER_UNITS[system];
+  const labels = Array.from({ length: Math.ceil(extent / millimetres) - 1 }, (_, index) => index + 1);
 
   return (
     <div aria-hidden="true" className="zekke-ruler-scale">
@@ -119,7 +120,7 @@ function RulerScale({ centimetres, vertical }: { centimetres: number; vertical: 
         <span
           key={label}
           className="zekke-ruler-label"
-          style={vertical ? { top: scaled(label, 'cm') } : { left: scaled(label, 'cm') }}
+          style={vertical ? { top: scaled(label, unit) } : { left: scaled(label, unit) }}
         >
           {label}
         </span>
@@ -145,7 +146,7 @@ function handlePosition(side: MarginSide, margin: number): CSSProperties {
   return { [side]: scaled(margin, 'mm') };
 }
 
-function scaled(value: number, unit: 'mm' | 'cm'): string {
+function scaled(value: number, unit: 'mm' | 'cm' | 'in'): string {
   return `calc(${value}${unit} * var(--page-scale, 1))`;
 }
 
@@ -158,6 +159,7 @@ function MarginHandle({
   onPreview,
   onCommit,
   onCancel,
+  measurement,
 }: MarginControls & {
   side: MarginSide;
   ruler: RefObject<HTMLDivElement | null>;
@@ -169,7 +171,8 @@ function MarginHandle({
   const keyed = useRef(false);
   const held = useRef(false);
   const name = MARGIN_NAMES[side];
-  const label = marginLabel(margins[side]);
+  const units = RULER_UNITS[measurement ?? 'metric'];
+  const label = marginLabel(margins[side], measurement);
 
   const preview = (next: PageMargins) => {
     latest.current = next;
@@ -193,7 +196,7 @@ function MarginHandle({
     if (!held.current || rect === undefined) {
       return;
     }
-    const step = event.altKey ? MARGIN_FINE_STEP_MM : MARGIN_STEP_MM;
+    const step = event.altKey ? units.fine : units.step;
     const distance = pointerDistance(side, rect, event) / scale;
     const wanted = snapMargin(millimetresFromPixels(distance), step);
     preview(moveMargin(start.current, side, wanted));
@@ -216,11 +219,7 @@ function MarginHandle({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey
-      ? MARGIN_LARGE_STEP_MM
-      : event.altKey
-        ? MARGIN_FINE_STEP_MM
-        : MARGIN_STEP_MM;
+    const step = event.shiftKey ? units.large : event.altKey ? units.fine : units.step;
     const targets: Record<string, number> = {
       ArrowUp: margins[side] + step,
       ArrowRight: margins[side] + step,

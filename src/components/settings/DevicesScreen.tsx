@@ -22,6 +22,7 @@ import {
 import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
 import ConnectExtension from './ConnectExtension';
 import { Badge, Button, Card, Field, Notice, TextArea } from '@/components/ui';
+import { regionalDate } from '@/lib/regional';
 
 export default function DevicesScreen() {
   const context = useAuthedContext();
@@ -163,7 +164,7 @@ function DeviceItem({
         </span>
       </div>
       <p className="text-compact text-ink-muted">
-        {describeScopes(row.scopes)} · added {new Date(row.createdAt).toLocaleDateString()}
+        {describeScopes(row.scopes)} · added {regionalDate(new Date(row.createdAt))}
       </p>
       {editing ? (
         <div className="flex flex-wrap items-end gap-2">

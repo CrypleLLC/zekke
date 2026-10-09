@@ -33,3 +33,7 @@ export * from './build';
 export * from './plan';
 export * from './scroll-chrome';
 export * from './menu-position';
+export * from './spreadsheet-charts';
+export * from './spreadsheet-print';
+export * from './spreadsheet-rebuild';
+export * from './region';

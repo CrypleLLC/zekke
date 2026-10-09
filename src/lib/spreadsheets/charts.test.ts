@@ -59,6 +59,13 @@ describe('a chart in the CRDT', () => {
     expect(chart.anchor.from.row).toBeLessThanOrEqual(chart.anchor.to.row);
   });
 
+  it('writes nothing when its box lies outside the sheet', () => {
+    const target = sheet();
+    const outside = { ...CHART, anchor: { ...CHART.anchor, to: { ...CHART.anchor.to, column: 40 } } };
+    expect(writeChart(target, 'c1', outside)).toBe(false);
+    expect(readCharts(target)).toEqual([]);
+  });
+
   it('cleans settings it does not recognise', () => {
     expect(normaliseSettings({ kind: 'radar', series: 'diagonal', title: '  ', extra: 1 })).toEqual({
       kind: 'column',

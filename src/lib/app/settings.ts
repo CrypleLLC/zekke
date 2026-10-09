@@ -3,6 +3,7 @@ export const SETTINGS_TABS = [
   { id: "devices", label: "Devices" },
   { id: "username", label: "Username" },
   { id: "pin", label: "PIN" },
+  { id: "region", label: "Region" },
   { id: "plan", label: "Plan" },
   { id: "account", label: "Account" },
 ] as const;

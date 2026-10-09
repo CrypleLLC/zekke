@@ -5,13 +5,13 @@ import {
   createSecret,
   deleteSecret,
   deleteSecrets,
-  listDeletedSecrets,
-  listSecrets,
   openSecret,
   purgeSecrets,
   restoreSecret,
 } from '@/lib/secrets';
 import { HOME_FOLDER_ID } from '@/lib/folders';
+import { feedDeletedSecrets, feedSecrets } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import {
   actionsHeader,
   buildDeletedVaultRows,
@@ -60,7 +60,7 @@ export default function VaultScreen() {
 
   const load = useCallback(async () => {
     try {
-      const records = await listSecrets(context);
+      const records = await feedSecrets(context);
       const opened = await Promise.all(
         records.map(async (record): Promise<OpenedSecret> => {
           try {
@@ -85,7 +85,7 @@ export default function VaultScreen() {
 
   const loadDeleted = useCallback(async () => {
     try {
-      const records = await listDeletedSecrets(context);
+      const records = await feedDeletedSecrets(context);
       const opened = await Promise.all(
         records.map(async (record): Promise<OpenedDeletedSecret> => {
           try {
@@ -112,6 +112,15 @@ export default function VaultScreen() {
     setDeletedError(undefined);
     void loadDeleted();
   }
+
+  const reloadFromFeed = useCallback(async () => {
+    await load();
+    if (showingDeleted) {
+      await loadDeleted();
+    }
+  }, [load, loadDeleted, showingDeleted]);
+
+  useFeedChanges('secrets', reloadFromFeed);
 
   const hideDeleted = useCallback(() => setShowingDeleted(false), []);
 

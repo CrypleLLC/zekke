@@ -1,0 +1,298 @@
+{
+ "FIND": {
+  "name": "FIND",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "FINDB": {
+  "name": "FINDB",
+  "why": "Microsoft retired the FIND/FINDB article and no other article names it, so its name is not established: kept in English"
+ },
+ "UNICODE": {
+  "name": "UNICODE",
+  "why": "the German article names no function; UNICODE kept as written"
+ },
+ "BETA.INV": {
+  "name": "BETA.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "BETAINV": {
+  "name": "BETAINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CHIINV": {
+  "name": "CHIINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "CHITEST": {
+  "name": "CHITEST",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COS": {
+  "name": "COS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "COT": {
+  "name": "COT",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DATEDIF": {
+  "name": "DATEDIF",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DBCS": {
+  "name": "DBCS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "DURATION": {
+  "name": "DURATION",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "F.INV": {
+  "name": "F.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "FILTER": {
+  "name": "FILTER",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "FINV": {
+  "name": "FINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "FTEST": {
+  "name": "FTEST",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAMMA.INV": {
+  "name": "GAMMA.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAMMAINV": {
+  "name": "GAMMAINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "GAUSS": {
+  "name": "GAUSS",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "HYPERLINK": {
+  "name": "HYPERLINK",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "INDEX": {
+  "name": "INDEX",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LAMBDA": {
+  "name": "LAMBDA",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LET": {
+  "name": "LET",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "LOGNORM.INV": {
+  "name": "LOGNORM.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MDURATION": {
+  "name": "MDURATION",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "MINUTE": {
+  "name": "MINUTE",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NOMINAL": {
+  "name": "NOMINAL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NORM.INV": {
+  "name": "NORM.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NORM.S.INV": {
+  "name": "NORM.S.INV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "NORMINV": {
+  "name": "NORMINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "PEARSON": {
+  "name": "PEARSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "POISSON": {
+  "name": "POISSON",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "QUARTILE": {
+  "name": "QUARTILE",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "QUOTIENT": {
+  "name": "QUOTIENT",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "SIN": {
+  "name": "SIN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TAN": {
+  "name": "TAN",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TINV": {
+  "name": "TINV",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "TTEST": {
+  "name": "TTEST",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.P": {
+  "name": "VAR.P",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "VAR.S": {
+  "name": "VAR.S",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "WEIBULL": {
+  "name": "WEIBULL",
+  "why": "the syntax line keeps the English name and the other names in the article are other functions"
+ },
+ "AND": {
+  "name": "UND",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "CONCATENATE": {
+  "name": "VERKETTEN",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "DATE": {
+  "name": "DATUM",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "EXPAND": {
+  "name": "ERWEITERN",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "IFS": {
+  "name": "WENNS",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "NOT": {
+  "name": "NICHT",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "OR": {
+  "name": "ODER",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "SWITCH": {
+  "name": "ERSTERWERT",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "TEXT": {
+  "name": "TEXT",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "VLOOKUP": {
+  "name": "SVERWEIS",
+  "why": "the article has no usable syntax line; its names follow the English article one by one"
+ },
+ "INT": {
+  "name": "GANZZAHL",
+  "why": "the article and its examples name it GANZZAHL; the syntax line was left in English"
+ },
+ "STDEVP": {
+  "name": "STABWN",
+  "why": "the article and its examples name it STABWN; the syntax line was left in English"
+ },
+ "CHOOSEROWS": {
+  "name": "ZEILENWAHL",
+  "why": "the localized index names it ZEILENWAHL, matching its sibling CHOOSECOLS = SPALTENWAHL; the article’s ZEILENAUSWAHL breaks the pair"
+ },
+ "TEXTAFTER": {
+  "name": "TEXTNACH",
+  "why": "the localized index names it TEXTNACH, matching its sibling TEXTBEFORE = TEXTVOR; its own article was left in English"
+ },
+ "WRAPROWS": {
+  "name": "ZEILENUMBRUCH",
+  "why": "the article and the index name it ZEILENUMBRUCH; the syntax line was left in English"
+ },
+ "WRAPCOLS": {
+  "name": "SPALTENUMBRUCH",
+  "why": "the localized index names it SPALTENUMBRUCH, matching its sibling WRAPROWS = ZEILENUMBRUCH; its own article was left in English"
+ },
+ "F.DIST": {
+  "name": "F.VERT",
+  "why": "the article and the index name it F.VERT, matching F.DIST.RT = F.VERT.RE; the syntax line was left in English"
+ },
+ "ODDFPRICE": {
+  "name": "UNREGER.KURS",
+  "why": "the example formulas use UNREGER.KURS; the syntax line carries ODDFYIELD’s name (UNREGER.KURS.REND is not it)"
+ },
+ "CEILING.MATH": {
+  "name": "OBERGRENZE.MATHEMATIK",
+  "why": "the example formulas use OBERGRENZE.MATHEMATIK; the syntax line is garbled (DECKE. MATHEMATIK)"
+ },
+ "VALUETOTEXT": {
+  "name": "WERTZUTEXT",
+  "why": "the syntax line says WERTZUTEXT; the example’s WERTTOTEXT mixes in English"
+ },
+ "ISTEXT": {
+  "name": "ISTTEXT",
+  "why": "named in the IS functions article"
+ },
+ "PERCENTILE.EXC": {
+  "name": "QUANTIL.EXKL",
+  "why": "the article names it QUANTIL.EXKL; its syntax line is machine-translated (QUANTIL. EXC)"
+ },
+ "FORECAST.LINEAR": {
+  "name": "PROGNOSE.LINEAR",
+  "why": "the forecast-and-forecast-linear article names it in its syntax line"
+ },
+ "BYCOL": {
+  "name": "BYCOL",
+  "why": "only the localized index names it (NACHSPALTE), and the index is machine-translated in many entries: kept in English"
+ },
+ "BYROW": {
+  "name": "BYROW",
+  "why": "only the localized index names it (NACHZEILE), and the index is machine-translated in many entries: kept in English"
+ },
+ "DISC": {
+  "name": "DISAGIO",
+  "why": "the localized index says RABATT, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "FACT": {
+  "name": "FAKULTÄT",
+  "why": "the localized index says FAKT, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "FIXED": {
+  "name": "FEST",
+  "why": "the localized index says BEHOBEN, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "GROWTH": {
+  "name": "VARIATION",
+  "why": "the localized index says WACHSTUM, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "MAKEARRAY": {
+  "name": "MAKEARRAY",
+  "why": "only the localized index names it (MATRIXERSTELLEN), and the index is machine-translated in many entries: kept in English"
+ },
+ "MAP": {
+  "name": "ZUORDNEN",
+  "why": "the localized index says KARTE, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "MATCH": {
+  "name": "VERGLEICH",
+  "why": "the localized index says ABGLEICHEN, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ },
+ "PERMUTATIONA": {
+  "name": "VARIATIONEN2",
+  "why": "the localized index says VARIATIONEN, but it is machine-translated in many entries (FIXED as BEHOBEN, MAP as KARTE); the article’s name stands"
+ }
+}

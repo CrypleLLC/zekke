@@ -2,7 +2,9 @@ import * as Y from 'yjs';
 import { readAxis } from './axis';
 import { readContent, type CellContent } from './cells';
 import { FORMULA_CODEC } from './formulas';
+import type { SpreadsheetRegional } from '@/lib/regional';
 import { markSpreadsheet } from './layout';
+import { writeSheetRegional } from './sheet-regional';
 import { createSheet, readSheets } from './sheets';
 import { WorkbookIndex } from './workbook';
 
@@ -66,17 +68,20 @@ export function readSheetPreview(doc: Y.Doc, rows = PREVIEW_ROWS, columns = PREV
   return grid.slice(0, last + 1);
 }
 
-export function newSpreadsheetDoc(): Y.Doc {
+export function newSpreadsheetDoc(regional?: SpreadsheetRegional): Y.Doc {
   const doc = new Y.Doc();
   doc.transact(() => {
     markSpreadsheet(doc);
     createSheet(doc, { name: FIRST_SHEET_NAME });
+    if (regional !== undefined) {
+      writeSheetRegional(doc, regional);
+    }
   });
   return doc;
 }
 
-export function newSpreadsheetSnapshot(): Uint8Array {
-  const doc = newSpreadsheetDoc();
+export function newSpreadsheetSnapshot(regional?: SpreadsheetRegional): Uint8Array {
+  const doc = newSpreadsheetDoc(regional);
   try {
     return Y.encodeStateAsUpdate(doc);
   } finally {

@@ -2,6 +2,8 @@ import type { DocumentKind, DocumentSummary, SnapshotCapacity } from "@/lib/docu
 import type { FirstPage, SyncStatus } from "@/lib/documents";
 import { cellsInBytes, type CapacityRefusal } from "@/lib/spreadsheets/capacity";
 import { daysLabel } from "./trash";
+import { countOf, DOCUMENT_NOUNS, SPREADSHEET_NOUNS, type FolderNouns } from "./folders";
+import { regionalCount, regionalDate, regionalShortDate } from '@/lib/regional';
 
 export const UNTITLED_DOCUMENT = "Untitled document";
 export const UNTITLED_SPREADSHEET = "Untitled spreadsheet";
@@ -47,6 +49,8 @@ export const SAVE_STATUS_LABELS: Record<SyncStatus, string> = {
   synced: "All changes saved",
   saving: "Saving…",
   offline: "Offline — changes are kept on this device",
+  waiting: "Saving paused for a moment — changes are kept on this device",
+  gone: "Deleted on another device — changes here are no longer saved",
   error: "Sync paused",
 };
 
@@ -71,7 +75,7 @@ export function saveIndicator(progress: SaveProgress): SaveIndicator {
   if (progress.status === "idle" || progress.status === "loading") {
     return "opening";
   }
-  if (progress.gapDetected || progress.status === "error") {
+  if (progress.gapDetected || progress.status === "error" || progress.status === "gone") {
     return "unsaved";
   }
   if (progress.uploading) {
@@ -114,11 +118,7 @@ export function editedLabel(updatedAt: string, now: Date = new Date()): string {
     return `Edited ${hours} hour${hours === 1 ? "" : "s"} ago`;
   }
 
-  return `Edited ${at.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: at.getFullYear() === now.getFullYear() ? undefined : "numeric",
-  })}`;
+  return `Edited ${at.getFullYear() === now.getFullYear() ? regionalShortDate(at) : regionalDate(at)}`;
 }
 
 export interface DocumentTile {
@@ -164,15 +164,16 @@ export function buildDocumentTiles(
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function documentCountLabel(count: number): string {
-  return count === 1 ? "1 document" : `${count} documents`;
+export function documentCountLabel(count: number, nouns: FolderNouns = DOCUMENT_NOUNS): string {
+  return countOf(count, nouns);
 }
 
 export function documentDeleteConfirmation(
   count: number,
   retentionDays = 0,
+  nouns: FolderNouns = DOCUMENT_NOUNS,
 ): string {
-  const documents = count === 1 ? "this document" : `these ${count} documents`;
+  const documents = count === 1 ? `this ${nouns.one}` : `these ${count} ${nouns.many}`;
   const them = count === 1 ? "it" : "them";
   if (retentionDays > 0) {
     return `${capitalise(documents)} ${count === 1 ? "goes" : "go"} to the Trash, where you can restore ${them} for ${daysLabel(retentionDays)}. After that ${count === 1 ? "it is" : "they are"} deleted for good.`;
@@ -186,6 +187,53 @@ function capitalise(text: string): string {
 
 export function documentHref(id: string, kind: DocumentKind = "document"): string {
   return kind === "spreadsheet" ? `/sheets/${id}` : `/docs/${id}`;
+}
+
+export type DocumentShelfGrid = "documents" | "spreadsheets";
+
+export interface DocumentShelf {
+  kind: DocumentKind;
+  grid: DocumentShelfGrid;
+  rootLabel: string;
+  nouns: FolderNouns;
+  emptyRoot: string;
+  emptyFolder: string;
+  sizeGroupLabel: string;
+  smallerLabel: string;
+  largerLabel: string;
+}
+
+export const DOCUMENT_SHELVES: Record<DocumentKind, DocumentShelf> = {
+  document: {
+    kind: "document",
+    grid: "documents",
+    rootLabel: "Documents",
+    nouns: DOCUMENT_NOUNS,
+    emptyRoot: "Long-form writing, encrypted on this device before it is stored. Each document opens in its own tab.",
+    emptyFolder: "This folder holds no documents. Drag documents onto it, or create one while it is open.",
+    sizeGroupLabel: "Document size",
+    smallerLabel: "Smaller documents",
+    largerLabel: "Larger documents",
+  },
+  spreadsheet: {
+    kind: "spreadsheet",
+    grid: "spreadsheets",
+    rootLabel: "Spreadsheets",
+    nouns: SPREADSHEET_NOUNS,
+    emptyRoot: "Tables and figures, encrypted on this device before they are stored. Each spreadsheet opens in its own tab.",
+    emptyFolder: "This folder holds no spreadsheets. Drag spreadsheets onto it, or create one while it is open.",
+    sizeGroupLabel: "Spreadsheet size",
+    smallerLabel: "Smaller spreadsheets",
+    largerLabel: "Larger spreadsheets",
+  },
+};
+
+export function shelfEmptyLabel(shelf: DocumentShelf, inFolder: boolean): string {
+  return inFolder ? `No ${shelf.nouns.many} in this folder` : `No ${shelf.nouns.many} yet`;
+}
+
+export function tilesOnShelf<T extends { kind: DocumentKind }>(tiles: readonly T[], kind: DocumentKind): T[] {
+  return tiles.filter((tile) => tile.kind === kind);
 }
 
 export const NEW_ITEM_LABELS = {
@@ -203,7 +251,7 @@ export function capacityRefusalMessage(refusal: CapacityRefusal): string {
   const asked = cellsInBytes(refusal.addedBytes);
   return fits === 0
     ? "This spreadsheet is full: nothing more can be added. Remove content, or start a new spreadsheet."
-    : `This spreadsheet has room for about ${fits.toLocaleString()} more cells, and that change needs about ${asked.toLocaleString()}. Nothing was changed.`;
+    : `This spreadsheet has room for about ${regionalCount(fits)} more cells, and that change needs about ${regionalCount(asked)}. Nothing was changed.`;
 }
 
 export function snapshotCapacityMessage(capacity: SnapshotCapacity): string | undefined {
@@ -222,7 +270,7 @@ export function documentCountsLabel(
   characters: number,
   pages?: number,
 ): string {
-  const text = `${words.toLocaleString()} ${words === 1 ? "word" : "words"} · ${characters.toLocaleString()} ${
+  const text = `${regionalCount(words)} ${words === 1 ? "word" : "words"} · ${regionalCount(characters)} ${
     characters === 1 ? "character" : "characters"
   }`;
   if (pages === undefined) {

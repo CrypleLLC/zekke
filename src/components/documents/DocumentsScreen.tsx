@@ -1,17 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { feedDocumentMetas } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import type { DragEvent } from 'react';
 import {
   createDocument,
   createDocumentFromSnapshot,
   deleteDocuments,
-  listDocumentsMeta,
   loadDocumentSummaries,
   type DocumentSummary,
 } from '@/lib/documents';
 import { ApiError } from '@/lib/api';
 import { descendantsOf, moveItemsToFolder } from '@/lib/folders';
+import { activeRegional, spreadsheetDefaults } from '@/lib/regional';
 import { createSpreadsheet } from '@/lib/spreadsheets/api';
 import { IMPORT_ACCEPT, importSpreadsheet, titleFromFileName } from '@/lib/spreadsheets/interchange';
 import {
@@ -26,8 +28,11 @@ import {
   buildDocumentTiles,
   defaultIconSize,
   documentCountLabel,
-  DOCUMENT_NOUNS,
+  DOCUMENT_FOLDER_NOUNS,
+  DOCUMENT_SHELVES,
   countOf,
+  shelfEmptyLabel,
+  tilesOnShelf,
   deleteActionLabel,
   documentDeleteConfirmation,
   documentHref,
@@ -49,6 +54,7 @@ import {
   toggleNoteSelection,
   writeIconSize,
   writeItemLayout,
+  type DocumentShelf,
   type DocumentTile,
   type IconSize,
   type ItemLayout,
@@ -56,6 +62,7 @@ import {
 import { openWithSessionHandoff } from '@/lib/session/handoff';
 import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
 import { DocumentsIcon, FileTypeIcon, SharingIcon, TrashIcon, UploadIcon } from '@/components/ui/icons';
+import type { DocumentKind } from '@/lib/documents';
 import {
   Button,
   Card,
@@ -80,7 +87,20 @@ import { FolderDetailsPanel } from '@/components/folders/FolderDetailsPanel';
 import { PanelFacts } from '@/components/shell/SidePanel';
 import DocumentMiniature from './DocumentMiniature';
 
+const SHELF_ICON_KIND: Record<DocumentKind, 'document' | 'sheet'> = {
+  document: 'document',
+  spreadsheet: 'sheet',
+};
+
+export function ShelfIcon({ kind, className }: { kind: DocumentKind; className?: string }) {
+  return <FileTypeIcon kind={SHELF_ICON_KIND[kind]} className={className} />;
+}
+
 export default function DocumentsScreen() {
+  return <DocumentShelfScreen shelf={DOCUMENT_SHELVES.document} />;
+}
+
+export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
   const context = useAuthedContext();
   const { reportError, fullDevice, account } = useZekke();
   const retentionDays = account?.retention_days ?? 0;
@@ -94,26 +114,26 @@ export default function DocumentsScreen() {
   const [confirming, setConfirming] = useState(false);
   const [sharing, setSharing] = useState<string>();
   const [busy, setBusy] = useState(false);
-  const [pageSize, setPageSize] = useState<IconSize>(defaultIconSize('documents'));
+  const [pageSize, setPageSize] = useState<IconSize>(defaultIconSize(shelf.grid));
   const [layout, setLayout] = useState<ItemLayout>('grid');
   const [detailedFolder, setDetailedFolder] = useState<string>();
   const [folderCount, setFolderCount] = useState<{ id: string; items: number } | { id: string; error: string }>();
   const closeDetails = useCallback(() => setDetailedFolder(undefined), []);
 
   useEffect(() => {
-    setPageSize(readIconSize('documents'));
-    setLayout(readItemLayout('documents'));
-  }, []);
+    setPageSize(readIconSize(shelf.grid));
+    setLayout(readItemLayout(shelf.grid));
+  }, [shelf.grid]);
 
   const resize = useCallback((next: IconSize) => {
     setPageSize(next);
-    writeIconSize('documents', next);
-  }, []);
+    writeIconSize(shelf.grid, next);
+  }, [shelf.grid]);
 
   const relayout = useCallback((next: ItemLayout) => {
     setLayout(next);
-    writeItemLayout('documents', next);
-  }, []);
+    writeItemLayout(shelf.grid, next);
+  }, [shelf.grid]);
 
   const reloadDocuments = useRef<() => void>(() => undefined);
   const itemsChanged = useCallback(() => reloadDocuments.current(), []);
@@ -131,7 +151,7 @@ export default function DocumentsScreen() {
     void (async () => {
       try {
         const inside = descendantsOf(treeFolders, detailedFolder);
-        const metas = await listDocumentsMeta(context);
+        const metas = await feedDocumentMetas(context);
         const items = metas.filter((meta) => meta.folder_id !== undefined && inside.has(meta.folder_id)).length;
         if (live) {
           setFolderCount({ id: detailedFolder, items });
@@ -152,10 +172,8 @@ export default function DocumentsScreen() {
       return;
     }
     try {
-      const metas = await listDocumentsMeta(context, {
-        folder: listing === '' ? undefined : listing,
-      });
-      const loaded = await loadDocumentSummaries(context, metas);
+      const metas = await feedDocumentMetas(context, listing === '' ? undefined : listing);
+      const loaded = tilesOnShelf(await loadDocumentSummaries(context, metas), shelf.kind);
 
       setSummaries(loaded);
       setMessage(undefined);
@@ -169,11 +187,13 @@ export default function DocumentsScreen() {
       setMessage(reportError(error));
       setSummaries([]);
     }
-  }, [context, reportError, listing]);
+  }, [context, reportError, listing, shelf.kind]);
 
   useEffect(() => {
     reloadDocuments.current = () => void load();
   }, [load]);
+
+  useFeedChanges('documents', load);
 
   useEffect(() => {
     setSelecting(false);
@@ -206,7 +226,7 @@ export default function DocumentsScreen() {
 
   const dragDocuments = (event: DragEvent, id: string) => {
     const moving = selected.includes(id) ? selected : [id];
-    startItemDrag(event, moving, moving.length > 1 ? countOf(moving.length, DOCUMENT_NOUNS) : undefined);
+    startItemDrag(event, moving, moving.length > 1 ? countOf(moving.length, shelf.nouns) : undefined);
   };
 
   const tiles = useMemo(
@@ -222,7 +242,7 @@ export default function DocumentsScreen() {
     setBusy(true);
     try {
       const id =
-        kind === 'spreadsheet' ? (await createSpreadsheet(context)).id : (await createDocument(context)).document.id;
+        kind === 'spreadsheet' ? (await createSpreadsheet(context, spreadsheetDefaults(activeRegional()))).id : (await createDocument(context)).document.id;
       if (openFolder !== null) {
         await moveItemsToFolder(context, 'documents', [id], openFolder);
       }
@@ -242,7 +262,7 @@ export default function DocumentsScreen() {
       setMessage(undefined);
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const result = await importSpreadsheet(file.name, bytes);
+        const result = await importSpreadsheet(file.name, bytes, spreadsheetDefaults(activeRegional()));
         const record = await createDocumentFromSnapshot(context, result.snapshot);
         result.snapshot.fill(0);
         if (openFolder !== null) {
@@ -286,8 +306,8 @@ export default function DocumentsScreen() {
   const path = (
     <FolderPath
       state={tree}
-      rootLabel="Documents"
-      rootIcon={<DocumentsIcon className="h-4 w-4 shrink-0" />}
+      rootLabel={shelf.rootLabel}
+      rootIcon={<ShelfIcon kind={shelf.kind} className="h-4 w-4 shrink-0" />}
       itemIdsFor={sameIds}
       onDetails={(id) => setDetailedFolder((current) => (current === id ? undefined : id))}
     />
@@ -350,10 +370,8 @@ export default function DocumentsScreen() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-compact text-ink-muted">
           {tiles.length > 0
-            ? documentCountLabel(tiles.length)
-            : openFolder === null
-              ? 'No documents yet'
-              : 'No documents in this folder'}
+            ? documentCountLabel(tiles.length, shelf.nouns)
+            : shelfEmptyLabel(shelf, openFolder !== null)}
           {selecting && selected.length > 0 && ` · ${selected.length} selected`}
         </p>
 
@@ -362,9 +380,9 @@ export default function DocumentsScreen() {
             <SizeStepper
               size={pageSize}
               onChange={resize}
-              groupLabel="Document size"
-              smallerLabel="Smaller documents"
-              largerLabel="Larger documents"
+              groupLabel={shelf.sizeGroupLabel}
+              smallerLabel={shelf.smallerLabel}
+              largerLabel={shelf.largerLabel}
             />
           )}
           {tiles.length + folderTiles.length > 0 && <LayoutToggle layout={layout} onChange={relayout} />}
@@ -381,7 +399,7 @@ export default function DocumentsScreen() {
             </Button>
           )}
 
-          {selecting && <MoveToFolder state={tree} itemIds={selected} rootLabel="Documents" />}
+          {selecting && <MoveToFolder state={tree} itemIds={selected} rootLabel={shelf.rootLabel} />}
 
           {fullDevice && selecting && selected.length > 0 && (
             <Button variant="danger" disabled={busy} onClick={() => setConfirming(true)}>
@@ -394,7 +412,7 @@ export default function DocumentsScreen() {
 
       {confirming && (
         <Notice tone="warning">
-          <p>{documentDeleteConfirmation(selected.length, retentionDays)}</p>
+          <p>{documentDeleteConfirmation(selected.length, retentionDays, shelf.nouns)}</p>
           <div className="mt-3 flex gap-2">
             <Button variant="danger" disabled={busy} onClick={() => void removeSelected()}>
               {deleteActionLabel(retentionDays)}
@@ -408,10 +426,8 @@ export default function DocumentsScreen() {
 
       {tiles.length === 0 && folderTiles.length === 0 ? (
         <Card>
-          <Empty icon={<DocumentsIcon className="h-6 w-6" />}>
-            {openFolder === null
-              ? 'Long-form writing and spreadsheets, encrypted on this device before they are stored. Each opens in its own tab.'
-              : 'This folder is empty. Drag documents onto it, or create one while it is open.'}
+          <Empty icon={<ShelfIcon kind={shelf.kind} className="h-6 w-6" />}>
+            {openFolder === null ? shelf.emptyRoot : shelf.emptyFolder}
           </Empty>
         </Card>
       ) : layout === 'list' ? (
@@ -421,7 +437,7 @@ export default function DocumentsScreen() {
               key={folder.id}
               state={tree}
               folder={folder}
-              nouns={DOCUMENT_NOUNS}
+              nouns={DOCUMENT_FOLDER_NOUNS}
               itemIdsFor={sameIds}
               onDetails={() => setDetailedFolder((current) => (current === folder.id ? undefined : folder.id))}
             />
@@ -446,15 +462,15 @@ export default function DocumentsScreen() {
       ) : (
         <ul
           className="grid gap-1"
-          style={{ gridTemplateColumns: gridTemplate('documents', pageSize) }}
+          style={{ gridTemplateColumns: gridTemplate(shelf.grid, pageSize) }}
         >
           {folderTiles.map((folder) => (
             <FolderTile
               key={folder.id}
               state={tree}
               folder={folder}
-              nouns={DOCUMENT_NOUNS}
-              glyphPixels={pagePixels('documents', pageSize)}
+              nouns={DOCUMENT_FOLDER_NOUNS}
+              glyphPixels={pagePixels(shelf.grid, pageSize)}
               labelClass={iconScale(pageSize).labelClass}
               itemIdsFor={sameIds}
               onDetails={() => setDetailedFolder((current) => (current === folder.id ? undefined : folder.id))}
@@ -464,9 +480,9 @@ export default function DocumentsScreen() {
             <DocumentFile
               key={tile.id}
               tile={tile}
-              textPixels={miniatureTextPixels('documents', pageSize, DOCUMENT_MINIATURE_TEXT_SHARE)}
+              textPixels={miniatureTextPixels(shelf.grid, pageSize, DOCUMENT_MINIATURE_TEXT_SHARE)}
               titlePixels={documentMiniatureTitlePixels(pageSize)}
-              pageWidth={pagePixels('documents', pageSize)}
+              pageWidth={pagePixels(shelf.grid, pageSize)}
               labelClass={iconScale(pageSize).labelClass}
               selecting={selecting}
               selected={selected.includes(tile.id)}
@@ -496,7 +512,7 @@ export default function DocumentsScreen() {
               facts={[
                 {
                   label: 'Items',
-                  value: folderItemsLabel({ items: countShown.items, folders: subfolderCount }, DOCUMENT_NOUNS),
+                  value: folderItemsLabel({ items: countShown.items, folders: subfolderCount }, DOCUMENT_FOLDER_NOUNS),
                 },
               ]}
             />
@@ -511,20 +527,19 @@ export default function DocumentsScreen() {
           disabled={busy}
           options={[
             {
-              label: NEW_ITEM_LABELS.document,
-              icon: <FileTypeIcon kind="document" className="h-5 w-5 shrink-0" />,
-              onSelect: () => void create('document'),
+              label: NEW_ITEM_LABELS[shelf.kind],
+              icon: <ShelfIcon kind={shelf.kind} className="h-5 w-5 shrink-0" />,
+              onSelect: () => void create(shelf.kind),
             },
-            {
-              label: NEW_ITEM_LABELS.spreadsheet,
-              icon: <FileTypeIcon kind="sheet" className="h-5 w-5 shrink-0" />,
-              onSelect: () => void create('spreadsheet'),
-            },
-            {
-              label: SPREADSHEET_FILE_LABELS.import,
-              icon: <UploadIcon className="h-5 w-5 shrink-0 text-ink-muted" />,
-              onSelect: () => importPicker.current?.click(),
-            },
+            ...(shelf.kind === 'spreadsheet'
+              ? [
+                  {
+                    label: SPREADSHEET_FILE_LABELS.import,
+                    icon: <UploadIcon className="h-5 w-5 shrink-0 text-ink-muted" />,
+                    onSelect: () => importPicker.current?.click(),
+                  },
+                ]
+              : []),
           ]}
         />
       )}
@@ -624,7 +639,7 @@ function DocumentRow({
 }) {
   return (
     <ListingRow
-      icon={<FileTypeIcon kind={tile.kind === 'spreadsheet' ? 'sheet' : 'document'} />}
+      icon={<ShelfIcon kind={tile.kind} />}
       name={tile.title}
       nameClassName={tile.readable ? 'text-ink' : 'italic text-ink-muted'}
       type={documentTypeLabel(tile.kind)}

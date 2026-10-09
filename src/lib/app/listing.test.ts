@@ -10,6 +10,7 @@ import {
   listingDateLabel,
   newestCreatedFirst,
 } from './index';
+import { regionalDate } from '@/lib/regional';
 
 describe('the order a list draws its rows in', () => {
   it('puts the most recently created first', () => {
@@ -65,7 +66,7 @@ describe('a date over a time', () => {
     const at = new Date(2026, 8, 28, 9, 5).toISOString();
     const { date, time } = dateAndTimeLabels(at);
 
-    expect(date).toBe(new Date(at).toLocaleDateString());
+    expect(date).toBe(regionalDate(new Date(at)));
     expect(time).toMatch(/\d/);
     expect(time).not.toContain('2026');
     expect(date).not.toBe(time);

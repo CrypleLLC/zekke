@@ -2,7 +2,7 @@
 
 | File                    | Role                                                                       |
 | ----------------------- | -------------------------------------------------------------------------- |
-| `DocumentsScreen.tsx`   | The documents grid of page miniatures — opens each document in its own tab |
+| `DocumentsScreen.tsx`   | The grid or list of one shelf — documents or spreadsheets — each opening in its own tab |
 | `DocumentWorkspace.tsx` | The `/docs/[id]` page: title, toolbar, A4 sheet, counts, save status       |
 | `DocumentToolbar.tsx`   | The TipTap formatting toolbar                                              |
 | `DocumentOutline.tsx`   | The heading navigation panel beside the sheet                              |
@@ -20,18 +20,37 @@ A document's tile is a [`PageTile`](../tiles/README.md); why it looks the way it
 [Document and note tiles](../tiles/README.md#document-and-note-tiles). What it draws is the
 document's [first page](#first-pages-on-the-documents-screen).
 
-## Documents and spreadsheets in one list
+## Two shelves, one domain
 
-The Documents tab lists both, because a spreadsheet is an item of the same domain
-([ADR 00019](../../../../api-general/docs/adr/00019_spreadsheets_in_an_encrypted_crdt.md)). Which is
-which is read out of each item's own CRDT (`meta.kind`) while its summary is opened — the server
-cannot say. A spreadsheet's tile is its first sheet's top-left cells drawn as a small grid
+Documents and Spreadsheets are **two tabs drawn by one screen**. `DocumentShelfScreen` takes a
+`DocumentShelf` from `DOCUMENT_SHELVES` (`lib/app/documents.ts`) — the kind it shows, its nouns, its
+empty states, its size control labels and the `IconGrid` under which its size and grid-or-list
+layout are remembered (`documents`, `spreadsheets`). `DocumentsScreen` is the `document` shelf;
+[`SpreadsheetsScreen`](../spreadsheets/README.md) is the `spreadsheet` one.
+
+On the server they are still **one domain**: a spreadsheet is an item of the documents scope
+([ADR 00019](../../../../api-general/docs/adr/00019_spreadsheets_in_an_encrypted_crdt.md)), listed
+by the same `GET /documents`, shared and trashed as a document. Which is which is read out of each
+item's own CRDT (`meta.kind`) while its summary is opened — the server cannot say — and
+`tilesOnShelf` keeps the ones of the shelf's kind. An item that cannot be decrypted has no readable
+kind and is shown on the Documents shelf.
+
+**The folder tree is shared.** Both tabs browse the one `documents` folder tree, so a folder made on
+one shelf is there on the other, and a folder's count and its delete confirmation speak of
+**items** (`DOCUMENT_FOLDER_NOUNS`): deleting a folder from either tab takes both kinds with it.
+Giving each shelf its own tree would need a new folder scope on the API.
+
+Each shelf draws its kind's `FileTypeIcon` — blue for a document, green for a spreadsheet — in the
+sidebar, on Home, in the folder path, in its empty state, in the list rows and in the `+` menu.
+
+A spreadsheet's tile is its first sheet's top-left cells drawn as a small grid
 (`DocumentSummary.grid`), its row carries the sheet icon and the *Spreadsheet* type, and it opens at
-`/sheets/<id>` (`documentHref(id, kind)`). The `+` is a `FloatingAddMenu`: a document, a
-spreadsheet, or **a spreadsheet imported from a file** (`.xlsx`, `.csv`, `.tsv`). An import is read and
-converted in the tab ([`lib/spreadsheets`](../../lib/spreadsheets/README.md#files-in-and-out)); a file
-too large is refused before anything is created, and once created a notice names what the file
-held that did not come across. A new spreadsheet is created **with its first sheet already in its snapshot**
+`/sheets/<id>` (`documentHref(id, kind)`). The Documents `+` makes a document; the Spreadsheets `+`
+is a menu of a new spreadsheet or **a spreadsheet imported from a file** (`.xlsx`, `.csv`, `.tsv`).
+An import is read and converted in the tab
+([`lib/spreadsheets`](../../lib/spreadsheets/README.md#files-in-and-out)); a file too large is
+refused before anything is created, and once created a notice names what the file held that did not
+come across. A new spreadsheet is created **with its first sheet already in its snapshot**
 (`createSpreadsheet`), so no two devices ever race to create it.
 
 Each editor refuses the other's items: `/docs/<id>` on a spreadsheet, or `/sheets/<id>` on a
@@ -265,6 +284,11 @@ In page view, [`PageRulers.tsx`](./PageRulers.tsx) draws two rulers:
   page's handles are in the tab order and the accessibility tree; the rest are the same sliders
   repeated for the pointer.
 
+**The rulers follow the account's units** ([`lib/regional`](../../lib/regional/README.md)): centimetres
+in metric, inches in imperial, with the handles snapping to ¼ in (⅛ with Alt, 1 in with Shift) and
+labelled in inches. The margins are still stored in millimetres, so a document reads the same to
+someone who uses the other system.
+
 The ruler button in the toolbar hides and shows both rulers. Like the view, it is the viewer's
 choice, remembered per browser by `readRulersShown` / `writeRulersShown`
 ([`lib/app`](../../lib/app/README.md)), shown by default, and disabled in continuous view, which has
@@ -410,12 +434,15 @@ Below `docside` the three layers of chrome — title and status, the formatting 
   `text-headline`, and no `max-w-md` — so it takes whatever the buttons leave and truncates. The
   dot is the save state in one glance, from `saveIndicator` in
   [`lib/app/documents.ts`](../../lib/app/documents.ts): **red** as soon as there is a change the
-  server does not have — waiting out the debounce, kept offline, or sync paused; **yellow** while
+  server does not have — waiting out the debounce, kept offline, waiting out a `429`'s
+`Retry-After`, or sync paused — and for a document deleted on another device; **yellow** while
   a push is on its way; **green** once everything written has landed and nothing has changed since;
   grey while the document opens. Red and yellow are told apart by `SyncState.uploading`, because
   `status: "saving"` covers both the wait and the push. Its accessible name and tooltip are
-  `saveIndicatorLabel` — "Changes not saved yet", "Saving…", "All changes saved", or the offline
-  and gap messages `SaveStatus` shows on a wide screen. The word,
+  `saveIndicatorLabel` — "Changes not saved yet", "Saving…", "All changes saved", or the offline,
+  waiting, deleted-elsewhere and gap messages `SaveStatus` shows on a wide screen.
+  `useDocumentSync` polls the open document only while the tab is visible
+  ([`lib/documents` § Following other devices](../../lib/documents/README.md#following-other-devices-one-request-per-open-document)). The word,
   character and page counts are not shown in the slim bar.
 - **Quick return — on touch only.** On a touch device the bar slides away as the reader scrolls
   down and comes back on **any** scroll up of 12px or more, anywhere in the document, not only at

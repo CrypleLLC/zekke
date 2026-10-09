@@ -36,6 +36,7 @@ import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
 import NoteEditorToolbar from './NoteEditorToolbar';
 import { ArrowLeftIcon, TrashIcon } from '@/components/ui/icons';
 import { Button, Notice } from '@/components/ui';
+import { regionalCount } from '@/lib/regional';
 
 export default function NoteEditor({
   opened,
@@ -349,8 +350,8 @@ export default function NoteEditor({
           }`}
         >
           {left >= 0
-            ? `${left.toLocaleString()} characters left`
-            : `${Math.abs(left).toLocaleString()} characters over the limit`}
+            ? `${regionalCount(left)} characters left`
+            : `${regionalCount(Math.abs(left))} characters over the limit`}
           <span className="sm:hidden">
             {NOTE_SAVE_LABELS[status] ? ` · ${NOTE_SAVE_LABELS[status]}` : ''}
           </span>

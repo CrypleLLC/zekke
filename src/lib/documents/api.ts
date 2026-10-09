@@ -1,4 +1,4 @@
-import { assertCanonicalUuid, collectPages, request, type PageRequest } from '@/lib/api';
+import { assertCanonicalUuid, assertValidLimit, collectPages, request, type PageRequest } from '@/lib/api';
 import { requireToken, type AuthedContext } from '@/lib/context';
 import { normalizeActionArgs, signActionEnvelope } from '@/lib/signing';
 import { generateDek, type DekWrapper, type WrappedDek } from '@/lib/secrets';
@@ -10,12 +10,15 @@ import {
   DOCUMENT_VERSION,
   MAX_UPDATES_PER_REQUEST,
   MAX_UPDATE_CHARACTERS,
+  RevisionChangedError,
   assertContiguous,
   type AppendResult,
   type DocumentMetaRecord,
   type DocumentRecord,
   type DocumentUpdateRecord,
   type PendingUpdate,
+  type UpdatesHead,
+  type UpdatesPage,
 } from './records';
 
 export interface DocumentsContext extends AuthedContext {
@@ -118,27 +121,58 @@ export async function listUpdatesSince(
   context: DocumentsContext,
   id: string,
   since: number,
-  options: { limit?: number; expectFollowing?: boolean } = {},
-): Promise<DocumentUpdateRecord[]> {
+  options: { limit?: number; maxPages?: number } = {},
+): Promise<UpdatesPage> {
   const canonical = assertCanonicalUuid(id);
   if (!Number.isInteger(since) || since < 0) {
     throw new Error(`since must be a non-negative integer, got ${since}`);
   }
+  if (options.limit !== undefined) {
+    assertValidLimit(options.limit);
+  }
 
-  const updates = await collectPages<DocumentUpdateRecord>(
-    (page: PageRequest) =>
-      request<DocumentUpdateRecord[]>({
-        method: 'GET',
-        path: `/documents/${canonical}/updates`,
-        query: { since, limit: page.limit, cursor: page.cursor },
-        token: requireToken(context),
-        timeoutMs: context.timeoutMs,
-      }),
-    { limit: options.limit },
-  );
+  const maxPages = options.maxPages ?? 1000;
+  const updates: DocumentUpdateRecord[] = [];
+  let head: UpdatesHead | undefined;
+  let cursor: string | undefined;
 
-  assertContiguous(updates, options.expectFollowing === false ? {} : { after: since });
-  return updates;
+  for (let pages = 0; pages < maxPages; pages++) {
+    const response = await request<DocumentUpdateRecord[]>({
+      method: 'GET',
+      path: `/documents/${canonical}/updates`,
+      query: { since, limit: options.limit, cursor },
+      token: requireToken(context),
+      timeoutMs: context.timeoutMs,
+    });
+
+    const pageHead = readUpdatesHead(response.document);
+    if (head !== undefined && pageHead.revision !== head.revision) {
+      throw new RevisionChangedError(head.revision, pageHead.revision);
+    }
+    head = pageHead;
+    updates.push(...(response.data ?? []));
+
+    if (response.page?.has_more !== true || response.page.next_cursor === undefined) {
+      assertContiguous(updates);
+      return { updates, revision: head.revision, snapshotSeq: head.snapshot_seq };
+    }
+    cursor = response.page.next_cursor;
+  }
+
+  throw new Error(`pagination exceeded ${maxPages} pages — refusing to loop further`);
+}
+
+function readUpdatesHead(value: unknown): UpdatesHead {
+  const head = value as Partial<UpdatesHead> | undefined;
+  if (
+    head === undefined ||
+    head === null ||
+    !Number.isInteger(head.revision) ||
+    !Number.isInteger(head.snapshot_seq)
+  ) {
+    throw new Error('the updates response carries no document revision');
+  }
+  return { revision: head.revision as number, snapshot_seq: head.snapshot_seq as number };
 }
 
 export async function appendUpdates(
