@@ -20,6 +20,7 @@ export const ERROR_CODES = [
   'FOLDER_INTO_ITSELF',
   'PLAN_REQUIRED',
   'UPGRADE_REQUIRED',
+  'RESET',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

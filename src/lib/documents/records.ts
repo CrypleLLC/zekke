@@ -22,7 +22,7 @@ export interface DocumentMetaRecord {
   wrapped_dek: string;
   key_generation: number;
   snapshot_seq: number;
-  latest_seq: number;
+  latest_seq?: number;
   revision: number;
   version: string;
   created_at: string;
@@ -45,6 +45,24 @@ export interface DocumentUpdateRecord {
   seq: number;
   ciphertext: string;
   created_at: string;
+}
+
+export interface UpdatesHead {
+  revision: number;
+  snapshot_seq: number;
+}
+
+export interface UpdatesPage {
+  updates: DocumentUpdateRecord[];
+  revision: number;
+  snapshotSeq: number;
+}
+
+export class RevisionChangedError extends Error {
+  constructor(readonly from: number, readonly to: number) {
+    super(`the document was compacted elsewhere while its log was being read (revision ${from} → ${to})`);
+    this.name = 'RevisionChangedError';
+  }
 }
 
 export interface PendingUpdate {

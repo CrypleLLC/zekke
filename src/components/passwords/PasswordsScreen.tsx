@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   deleteCredential,
   deletedCredentials,
-  listCredentials,
   openCredential,
   purgeDeletedCredential,
   restoreCredential,
@@ -23,6 +22,8 @@ import {
   type PasswordRow,
 } from '@/lib/app';
 import { useAuthedContext, useZekke } from '@/components/session/ZekkeProvider';
+import { useFeedChanges } from '@/components/session/useFeed';
+import { feedCredentials } from '@/lib/feed';
 import { useVaultReveal } from '@/components/vault/VaultReveal';
 import { HistoryIcon, PasswordsIcon, PencilIcon, TrashIcon } from '@/components/ui/icons';
 import { Button, CopyButton, FloatingAddButton, HintedIconButton } from '@/components/ui';
@@ -53,7 +54,7 @@ export default function PasswordsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const records = await listCredentials(context);
+      const records = await feedCredentials(context);
       const opened = await Promise.all(
         records.map(async (record): Promise<OpenedCredential> => {
           try {
@@ -75,6 +76,8 @@ export default function PasswordsScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useFeedChanges('passwords', load);
 
   const loadDeleted = useCallback(async () => {
     try {

@@ -39,7 +39,7 @@ export async function loadDocumentSummary(
     id: meta.id,
     updatedAt: meta.updated_at,
     createdAt: meta.created_at,
-    latestSeq: meta.latest_seq,
+    latestSeq: meta.latest_seq ?? meta.snapshot_seq,
     snapshotSeq: meta.snapshot_seq,
     revision: meta.revision,
   };
@@ -49,6 +49,7 @@ export async function loadDocumentSummary(
     const spreadsheet = isSpreadsheet(sync.doc);
     return {
       ...base,
+      latestSeq: Math.max(base.latestSeq, sync.getState().cursor),
       kind: spreadsheet ? 'spreadsheet' : 'document',
       title: readTitle(sync.doc),
       preview: spreadsheet ? '' : readBodyText(sync.doc),

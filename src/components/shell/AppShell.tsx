@@ -14,6 +14,7 @@ import {
   type SettingsTabId,
 } from '@/lib/app';
 import { useZekke } from '@/components/session/ZekkeProvider';
+import { useFeedPolling } from '@/components/session/useFeed';
 import NotesScreen from '@/components/notes/NotesScreen';
 import PasswordsScreen from '@/components/passwords/PasswordsScreen';
 import AccountMenu from './AccountMenu';
@@ -180,6 +181,7 @@ const EXIT_ICONS: Record<SessionExitId, ComponentType<IconProps>> = {
 
 export default function AppShell() {
   const { account, lock, removeBrowser, holds, chainProblem, notice, dismissNotice, reportError } = useZekke();
+  useFeedPolling();
   const navItems: readonly NavItem[] = NAV_ITEMS.filter(
     (item: NavItem) => item.scope === undefined || holds(item.scope),
   );

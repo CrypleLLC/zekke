@@ -115,7 +115,14 @@ export async function listTreeFolderRecords(context: AuthedContext, scope: TreeS
 }
 
 export async function listTreeFolders(context: AuthedContext, scope: TreeScope): Promise<TreeFolder[]> {
-  const records = await listTreeFolderRecords(context, scope);
+  return openTreeFolders(context, scope, await listTreeFolderRecords(context, scope));
+}
+
+export async function openTreeFolders(
+  context: AuthedContext,
+  scope: TreeScope,
+  records: readonly TreeFolderRecord[],
+): Promise<TreeFolder[]> {
   const folders = await Promise.all(
     records.map(
       async (record): Promise<TreeFolder> => ({

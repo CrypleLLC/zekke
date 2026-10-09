@@ -54,6 +54,7 @@ STALE_KEY_GENERATION` when it is not the scope's current one.
 - [24. Notifications Endpoints](#24-notifications-endpoints)
 - [25. Client Version Endpoints](#25-client-version-endpoints)
 - [26. Preferences Endpoints](#26-preferences-endpoints)
+- [27. Change Feed Endpoint](#27-change-feed-endpoint)
 
 ---
 
@@ -184,8 +185,9 @@ path** is not in that category — see `405` below — and does return the envel
 | 422  | `FOLDER_TOO_DEEP`      | A folder create or move would make the tree deeper than 8 levels.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 422  | `FOLDER_INTO_ITSELF`   | A folder move would put it inside itself or its own subtree.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 409  | `TOO_MANY_DEVICES`     | §19 only: the account already has `DEVICES_MAX_PER_ACCOUNT` active devices.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 410  | `RESET`                | §27 only: the cursor is older than the tombstones kept. Drop the scope's local copy and pull from `since=0`. |
 | 413  | `BAD_REQUEST`          | `POST /files` only ([§17](#17-files-endpoints)): the declared object exceeds `FILES_MAX_OBJECT_BYTES`. **Note the code is `BAD_REQUEST`, not a code of its own** — branch on the status, not the code, to tell this from an ordinary field rejection.                                                                                                                                                                                                                                                                                                                                                                                                |
-| 429  | `TOO_MANY_REQUESTS`    | Four budgets. Per client address: one shared by the public routes (`/sign-up`, `/sign-in`, `/auth/verify`, `/users/lookup`, `/devices/enrol`, `/devices/enrol/chain`, `/oprf/account/evaluate`), one on the device PIN routes (`/oprf/devices/{id}/evaluate`, `/confirm`), and one shared by `PUT /users/username` and `GET /users/resolve`. Per account: one on `POST /files`, and one on `POST /billing/ticket`. The address or account sent more requests than that budget allows in the current window. `Retry-After` is the number of seconds to wait. **It says nothing about the account** — do not show it as an authentication failure, and do not retry before `Retry-After`. |
+| 429  | `TOO_MANY_REQUESTS`    | Four budgets. Per client address: one shared by the public routes (`/sign-up`, `/sign-in`, `/auth/verify`, `/users/lookup`, `/devices/enrol`, `/devices/enrol/chain`, `/oprf/account/evaluate`), one on the device PIN routes (`/oprf/devices/{id}/evaluate`, `/confirm`), and one shared by `PUT /users/username` and `GET /users/resolve`. Per account: one on `POST /files`, one on `POST /documents/{id}/attachments`, one on `POST /documents/{id}/updates`, one on `POST /documents/{id}/compact`, and one on `POST /billing/ticket`. The address or account sent more requests than that budget allows in the current window. `Retry-After` is the number of seconds to wait. **It says nothing about the account** — do not show it as an authentication failure, and do not retry before `Retry-After`. |
 | 500  | `INTERNAL_ERROR`       | Unexpected server/database failure. Safe to retry once.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 503  | `SERVICE_UNAVAILABLE`  | The per-address budgets above only — `POST /files` lets the request through instead: the rate limiter could not reach its store, so the request was refused rather than let through unmetered. Retry after a short wait.                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 503  | `NOT_READY`            | `GET /ready` only ([§6](#6-service-endpoints)): a dependency did not answer. Never returned by any other endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -194,13 +196,12 @@ path** is not in that category — see `405` below — and does return the envel
 Codes defined but not currently emitted by any handler: `DATABASE_ERROR`, `EMPTY_BODY`, `FORBIDDEN`.
 
 `USER_NOT_FOUND` is a fifth: it exists only in a defensive branch of
-`DELETE /users` that cannot fire, because the root verification fails first with
-`401 INVALID_CREDENTIALS`. Earlier versions of
+`DELETE /users` that cannot fire, because a token of an account whose deletion has
+begun is refused first with `401 UNAUTHORIZED`. Earlier versions of
 this guide listed it as a `DELETE /users` response — **do not branch on it.** A
-delete that cannot find the account answers `401 INVALID_CREDENTIALS`, the same
-code as a wrong PIN.
+retried delete after a lost `204` answers `401 UNAUTHORIZED`: the deletion went through.
 
-> **`401 INVALID_CREDENTIALS` is reachable on every protected route, including plain `GET`s that take no body.** Almost every protected handler starts by resolving the JWT's `user_address` back to an account row, and a failure there is reported as `INVALID_CREDENTIALS`, never `UNAUTHORIZED`. Since 2026-09-21 a deleted account's tokens fail earlier, with `401 UNAUTHORIZED`, because its devices are gone. `INVALID_CREDENTIALS` on a plain `GET` now means only a race with that deletion. The per-endpoint tables below list it wherever it applies; treat it as always possible on a `🔒` route and handle it as "start over from sign-in", distinct from a `401 UNAUTHORIZED` expiry. The only protected route without this path is `GET /users/{uuid}/public-keys`, which looks up the _subject_, not the caller.
+> **`401 INVALID_CREDENTIALS` is reachable on every protected route, including plain `GET`s that take no body.** Almost every protected handler starts by resolving the JWT's `user_address` back to an account row, and a failure there is reported as `INVALID_CREDENTIALS`, never `UNAUTHORIZED`. A deleted account's tokens fail earlier, with `401 UNAUTHORIZED`, from the moment `DELETE /users` commits. `INVALID_CREDENTIALS` on a plain `GET` now means only a race with that deletion. The per-endpoint tables below list it wherever it applies; treat it as always possible on a `🔒` route and handle it as "start over from sign-in", distinct from a `401 UNAUTHORIZED` expiry. The only protected route without this path is `GET /users/{uuid}/public-keys`, which looks up the _subject_, not the caller.
 
 **`405` always carries an `Allow` header** with the verbs that path does accept, as one comma-separated value:
 
@@ -536,7 +537,9 @@ again rather than retrying.
 
 ### `DELETE /users` — 🔒 protected
 
-Deletes the account and, by cascade, every device, keyring, event, PIN registration, item, connection and share. **Irreversible.** Needs a **full device** (`404` otherwise) **and the root**: the seed must be typed for this, so a stolen device cannot destroy the account.
+Deletes the account. **Irreversible, with no grace period.** Needs a **full device** (`404` otherwise) **and the root**: the seed must be typed for this, so a stolen device cannot destroy the account.
+
+The account stops existing for every caller when this returns: its tokens are refused, sign-in and enrolment fail as for an unknown account, its public keys are not served and its username resolves to nobody. Its drive files and document images are then removed from storage by the server's worker, and only after that are its rows — every device, keyring, item, connection and share — deleted. A paid plan is cancelled at once. **Its usernames are never released**: no other account can ever claim them, so a contact who still writes to the old name reaches no one. The same seed can sign up again, as a new, empty account under a new username.
 
 **Request**
 
@@ -551,7 +554,7 @@ Deletes the account and, by cascade, every device, keyring, event, PIN registrat
 
 Getting a `pin_proof` means calling `POST /oprf/account/evaluate` first (§20). A Standard account sends none; sending one anyway is refused.
 
-**`204 No Content`**: no body. Every token of the account is `401 UNAUTHORIZED` from then on.
+**`204 No Content`**: no body. Every token of the account is `401 UNAUTHORIZED` from then on, so a retry after a lost response gets `401 UNAUTHORIZED` — treat that as success.
 
 **Errors:** `400 INVALID_BODY` · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` (root signature, proof missing, wrong, or sent by a Standard account) · `404 NOT_FOUND` (a limited device) · `500 INTERNAL_ERROR`.
 
@@ -1182,13 +1185,24 @@ Deltas above the cursor, in `seq` order, paginated. `since` is **exclusive** and
 {
   "message": "Document updates retrieved successfully",
   "data": [{ "seq": 8, "ciphertext": "…", "created_at": "…" }],
-  "page": { "next_cursor": "…", "has_more": true }
+  "page": { "next_cursor": "…", "has_more": true },
+  "document": { "revision": 4, "snapshot_seq": 7 }
 }
 ```
 
+**`document` is the document's head**, read in the same transaction as the deltas. **This is the call
+to poll an open document with** — never `GET /documents`, which lists the whole index:
+
+- an empty `data` and the `revision` you hold: nothing new;
+- deltas and the same `revision`: another device's edits, apply them;
+- a different `revision`: another device compacted. Refetch `GET /documents/{id}` and pull from the
+  new snapshot — the log may have restarted below your cursor. If `revision` changes between two
+  pages of one pull, start over the same way;
+- `404`: the document was deleted or trashed elsewhere.
+
 > **Verify `seq` contiguity before you compact.** The server orders the log, so a compromised backend could drop an update. Reordering is harmless — Yjs merges commute — but a dropped delta is lost work, and the sealed-blob format carries no AAD to detect it. Check that the sequence runs unbroken from `snapshot_seq`, and refuse to compact over a gap.
 
-**Errors:** `400 INVALID_PARAM` (non-numeric or negative `since`, unusable paging) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` (no such document, or not yours) · `500 INTERNAL_ERROR`.
+**Errors:** `400 INVALID_PARAM` (non-numeric or negative `since`, unusable paging) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` (no such document, not yours, or in the Trash) · `500 INTERNAL_ERROR`.
 
 ### `POST /documents/{id}/updates`
 
@@ -1210,7 +1224,9 @@ Batched, so a burst of debounced saves costs one round trip. At most **256 updat
 
 `client_update_id` is a UUID you generate per delta, and it makes the append **idempotent**: replaying it is `skipped` and consumes no sequence number, so a retried request after a timeout cannot duplicate or gap your log. One malformed id rejects the whole batch and appends nothing.
 
-**Errors:** `400 INVALID_BODY` · `400 INVALID_PARAM` (any `client_update_id` is not a canonical UUID) · `400 BAD_REQUEST` (empty batch, over 256 updates, or an oversized delta) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` · `500 INTERNAL_ERROR`.
+**Rate limited per account**: 120 appends a minute by default, across every device, tab and document. A `429` means keep the queue, wait `Retry-After` and send it again — it is not "offline", and nothing is lost.
+
+**Errors:** `400 INVALID_BODY` · `400 INVALID_PARAM` (any `client_update_id` is not a canonical UUID) · `400 BAD_REQUEST` (empty batch, over 256 updates, or an oversized delta) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` · `429 TOO_MANY_REQUESTS` (with `Retry-After`) · `500 INTERNAL_ERROR`.
 
 ### `POST /documents/{id}/compact`
 
@@ -1232,7 +1248,9 @@ Merges the log into a new snapshot and prunes what it replaces, in one transacti
 
 `through_seq` above the stored maximum is `400` and prunes nothing: that would discard deltas you never merged. `expected_revision` is optional (omit or send `0` to skip the check); a mismatch is `409 CONFLICT` and changes nothing.
 
-**Errors:** `400 INVALID_BODY` · `400 INVALID_PARAM` · `400 BAD_REQUEST` (empty snapshot, `through_seq` ahead of the log) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` · `409 CONFLICT` (stale `expected_revision`) · `500 INTERNAL_ERROR`.
+**Rate limited per account**: 30 compactions an hour by default. On a `429`, do not compact again before `Retry-After`; the document keeps working from its log.
+
+**Errors:** `400 INVALID_BODY` · `400 INVALID_PARAM` · `400 BAD_REQUEST` (empty snapshot, `through_seq` ahead of the log) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND` · `409 CONFLICT` (stale `expected_revision`) · `429 TOO_MANY_REQUESTS` (with `Retry-After`) · `500 INTERNAL_ERROR`.
 
 ### `PUT /documents/keys` — re-wrap after a rotation
 
@@ -2722,3 +2740,66 @@ current one.
 revision, no `key_generation`) · `401 UNAUTHORIZED` · `401 INVALID_CREDENTIALS` · `404 NOT_FOUND`
 (nothing stored yet, or a device without `documents`) · `409 CONFLICT` (stale revision: read, merge,
 retry) · `409 STALE_KEY_GENERATION`.
+
+## 27. Change Feed Endpoint
+
+**One route that says what changed in a scope since a cursor.** Read
+[ADR 00022](docs/adr/00022_change_feed.md). Every syncable row carries a `seq`, allocated per
+account and scope: each write takes the scope's next number, so a row's `seq` is the position of its
+**last** change. A device keeps one cursor per scope it holds and asks for everything above it.
+
+### `GET /changes?scope=&since=&limit=` — 🔒 protected
+
+| Param   | Meaning                                                                       |
+| ------- | ----------------------------------------------------------------------------- |
+| `scope` | `passwords`, `secrets`, `notes`, `documents` or `files`                        |
+| `since` | the cursor you hold; `0` or absent is the full listing of the scope           |
+| `limit` | rows per page, default 100, at most 500                                       |
+
+```json
+{
+  "message": "Changes retrieved",
+  "data": {
+    "changes": [
+      { "seq": 41, "type": "note", "id": "uuid", "tombstone": false, "item": { "id": "uuid", "ciphertext": "...", "wrapped_dek": "...", "key_generation": 2, "version": "v1", "created_at": "...", "updated_at": "..." } },
+      { "seq": 42, "type": "note", "id": "uuid", "tombstone": true }
+    ],
+    "cursor": 42,
+    "more": false
+  }
+}
+```
+
+**`type` per scope:**
+
+| Scope       | `type` and the shape of `item`                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| `passwords` | `credential` — a revision, as `GET /credentials/sync` returns it; `id` is the `revision_id`                     |
+| `secrets`   | `secret` — as `GET /secrets/{id}`, plus `deleted_at`; `folder_manifest` — as `GET /secrets/folders`, `id` is `"secrets"` |
+| `notes`     | `note` — as `GET /notes/{id}`; `folder_manifest` — as `GET /notes/folders`, `id` is `"notes"`                     |
+| `documents` | `document` — the `GET /documents` row without `latest_seq`, plus `deleted_at`; `document_folder` — a folder, plus `deleted_at` |
+| `files`     | `file` — the `GET /files` row plus `deleted_at`; `file_folder` — a folder, plus `deleted_at`                      |
+
+**How to apply a page**, in one local transaction with the new cursor:
+
+- An entry with `tombstone: false` **replaces** whatever you hold under that `type` and `id` — it is
+  the row's current state, not a diff. A row edited three times since your cursor arrives once.
+- A row with `deleted_at` set went to the Trash or Recently deleted; it still exists.
+- An entry with `tombstone: true` carries no `item`: the row is gone for good. Remove it if you
+  have it; ignore it if you do not.
+- Your own writes come back too. Applying by `id` and `seq` makes that harmless.
+- `more: true` means call again at once with `since = cursor`. `more: false` means you are at the
+  head: store `cursor` and ask again later.
+- `since=0` sends no tombstones — you hold nothing to remove.
+
+**What the feed does not carry:** a document's content (read it from
+`GET /documents/{id}/updates?since=`; the feed moves a document only on creation, a move, a rekey,
+the Trash and a compaction), a file's replication progress,
+and anything shared with you (§18 keeps its listings).
+
+An idle poll — `since` equal to the head — is answered from one row and touches no item.
+
+**Errors:** `400 INVALID_PARAM` (unknown scope, a negative or non-numeric `since` or `limit`) ·
+`401 UNAUTHORIZED` · `404 NOT_FOUND` (this device does not hold the scope) · **`410 RESET`** — your
+cursor is older than the deletions the server keeps (30 days by default) or does not belong to this
+account's history: **drop what you hold for that scope and pull from `since=0`**.

@@ -39,7 +39,7 @@ no gain.
 | `api.ts`        | The nine endpoints, DEK wrapping, and the `document-delete` signature |
 | `crypto.ts`     | Sealing deltas and snapshots under the per-document DEK               |
 | `content.ts`    | The `Y.Doc` layout: `body`, `meta.title`, `meta.font`, `meta.margins` |
-| `sync.ts`       | `DocumentSync` — the engine: open, pull, debounce, push, compact      |
+| `sync.ts`       | `DocumentSync` — the engine: open, pull, poll, debounce, push, compact, wait on a `429` |
 | `summaries.ts`  | Decrypting enough of each document to render the dashboard list       |
 | `outline.ts`    | Headings out of a ProseMirror document, nested into a tree            |
 | `pagination.ts` | Where the page breaks fall, given block heights                       |
@@ -198,6 +198,53 @@ waiting for the timer, and changes being pushed. `SyncState.uploading` tells the
 from the moment `flush()` starts a drain until that drain settles, `false` otherwise — and
 `pending` counts what the server does not have yet, in flight included. The editor's save dot
 reads both ([`lib/app`](../app/documents.ts)'s `saveIndicator`).
+
+## Following other devices: one request per open document
+
+An open document learns about other devices' edits by **polling its own updates route**,
+`GET /documents/{id}/updates?since=<cursor>` ([Task 148](../../../../tasks-closed.md#task-148)).
+The response carries the document's head beside the deltas — `revision` and `snapshot_seq`, read
+in the same transaction — so one call answers every case:
+
+| What the poll sees                     | What `DocumentSync` does                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------- |
+| no deltas, the same `revision`         | nothing — the common case                                                       |
+| deltas, the same `revision`            | checks they follow the cursor, applies them                                     |
+| another `revision`                     | another device compacted: `refreshHead` reads the snapshot and pulls from zero  |
+| `revision` changes between two pages   | `listUpdatesSince` throws `RevisionChangedError`; the same refresh              |
+| `404`                                  | the document was deleted or trashed elsewhere: status `gone`, polling stops     |
+
+Until 2026-10-08 the poll read `GET /documents` — the whole index, every page — to find one row,
+and ran in every tab whether visible or not. The transport no longer has `listMeta`.
+
+The revision is checked **before** contiguity. After a compaction elsewhere the log may continue
+above the cursor or restart at `1`, and either would look like a gap if it were read as a
+continuation of the old log. A cold pull whose revision differs from the snapshot it just applied
+(a compaction landed between the two reads) refreshes too. Refreshing is bounded:
+`MAX_HEAD_REFRESHES` (3) in a row, then an error rather than a loop.
+
+**The interval backs off while nothing changes**: 20 s, then 40 s, then 60 s
+(`DEFAULT_MAX_POLL_INTERVAL_MS`, the `maxPollIntervalMs` option), and back to 20 s on the first
+change. `startPolling` restarts at the base interval. **Polling stops while the tab is hidden**:
+`components/documents/useDocumentSync` calls `stopPolling` on hiding the tab and, on showing it,
+polls at once and starts again — so an idle open document costs one small request per interval
+while it is looked at, and none while it is not.
+
+A `gone` document keeps what was typed locally but sends nothing more: `flush` returns at once and
+the editor's label says the document was deleted on another device.
+
+## A refused write waits, it is not offline
+
+The server limits appends to 120 a minute and compactions to 30 an hour per account
+([Task 149](../../../../tasks-closed.md#task-149)), far above what an editor sends. When a push
+is refused with `429`, `DocumentSync` keeps the batch in flight and the queue intact, sets status
+`waiting` and arms a timer for `Retry-After` (10 s when the header is missing). Until it fires,
+`flush` does nothing — a new edit still queues, and the status stays `waiting` — and then the
+engine sends the queue on its own. `markOffline` is for network failures only; a `429` used to
+go through it, which showed "Offline" and retried only on the next edit.
+
+A refused compaction blocks further compactions until its `Retry-After` has passed. The document
+keeps working from its log in the meantime.
 
 ## Document titles live inside the CRDT
 

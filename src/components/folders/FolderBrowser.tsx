@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { feedTreeFolders } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import type { DragEvent as ReactDragEvent, ReactNode } from 'react';
 import {
   canCreateIn,
@@ -11,7 +13,7 @@ import {
   descendantsOf,
   FolderManifestInvalidError,
   FolderTreeProblemError,
-  listTreeFolders,
+  openTreeFolders,
   moveItemsToFolder,
   moveTreeFolder,
   pathTo,
@@ -113,7 +115,7 @@ export function useFolderTree(scope: TreeScope, onItemsChanged: () => void): Fol
 
   const reload = useCallback(async () => {
     try {
-      const loaded = await listTreeFolders(context, scope);
+      const loaded = await openTreeFolders(context, scope, await feedTreeFolders(context, scope));
       setFolders(loaded);
       setInvalid(false);
       setCurrent((open) => (open !== null && !loaded.some((folder) => folder.id === open) ? null : open));
@@ -132,6 +134,8 @@ export function useFolderTree(scope: TreeScope, onItemsChanged: () => void): Fol
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useFeedChanges(scope, reload);
 
   const run = useCallback(
     async <T,>(work: () => Promise<T>, after?: () => void): Promise<T | undefined> => {
