@@ -9,21 +9,25 @@ import {
   MAX_SNAPSHOT_CHARACTERS,
   MAX_UPDATE_CHARACTERS,
   SNAPSHOT_NEAR_FRACTION,
+  RevisionChangedError,
   SequenceGapError,
   SnapshotTooLargeError,
+  assertContiguous,
   assertLogFollows,
   highestSeq,
   type AppendResult,
-  type DocumentMetaRecord,
   type DocumentRecord,
-  type DocumentUpdateRecord,
   type PendingUpdate,
+  type UpdatesPage,
 } from "./records";
 
 export const REMOTE_ORIGIN = Symbol("Zekke/documents/remote");
 export const DEFAULT_DEBOUNCE_MS = 3000;
 export const DEFAULT_MAX_WAIT_MS = 8000;
 export const DEFAULT_POLL_INTERVAL_MS = 20_000;
+export const DEFAULT_MAX_POLL_INTERVAL_MS = 60_000;
+export const DEFAULT_RETRY_AFTER_SECONDS = 10;
+export const MAX_HEAD_REFRESHES = 3;
 export const DEFAULT_COMPACT_THRESHOLD = 64;
 export const DOCUMENT_COMPACT_THRESHOLD = 200;
 
@@ -36,11 +40,7 @@ export const MAX_UPDATE_RAW_BYTES =
 
 export interface DocumentTransport {
   fetchDocument(id: string): Promise<DocumentRecord>;
-  fetchUpdates(
-    id: string,
-    since: number,
-    options?: { expectFollowing?: boolean },
-  ): Promise<DocumentUpdateRecord[]>;
+  fetchUpdates(id: string, since: number): Promise<UpdatesPage>;
   pushUpdates(
     id: string,
     updates: readonly PendingUpdate[],
@@ -56,7 +56,6 @@ export interface DocumentTransport {
   unwrapDek(
     document: Pick<DocumentRecord, "wrapped_dek" | "key_generation">,
   ): Promise<Uint8Array>;
-  listMeta(): Promise<DocumentMetaRecord[]>;
   reportAttachments?(id: string, ids: readonly string[]): Promise<void>;
 }
 
@@ -68,6 +67,8 @@ export type SyncStatus =
   | "synced"
   | "saving"
   | "offline"
+  | "waiting"
+  | "gone"
   | "error";
 
 export interface SyncState {
@@ -90,6 +91,7 @@ export interface DocumentSyncOptions {
   debounceMs?: number;
   maxWaitMs?: number;
   pollIntervalMs?: number;
+  maxPollIntervalMs?: number;
   compactThreshold?: number;
   compactLogRatio?: number;
   compactMinLogBytes?: number;
@@ -105,6 +107,7 @@ export class DocumentSync {
   private readonly debounceMs: number;
   private readonly maxWaitMs: number;
   private readonly pollIntervalMs: number;
+  private readonly maxPollIntervalMs: number;
   private readonly compactThreshold: number;
   private readonly compactLogRatio?: number;
   private readonly compactMinLogBytes: number;
@@ -118,7 +121,12 @@ export class DocumentSync {
   private inFlightBytes = 0;
   private debounceTimer?: ReturnType<typeof setTimeout>;
   private waitingSince?: number;
-  private pollTimer?: ReturnType<typeof setInterval>;
+  private pollTimer?: ReturnType<typeof setTimeout>;
+  private polling = false;
+  private pollDelay = 0;
+  private retryTimer?: ReturnType<typeof setTimeout>;
+  private compactBlockedUntil = 0;
+  private gone = false;
   private flushing?: Promise<void>;
   private compacting?: Promise<void>;
   private logBase = 0;
@@ -148,6 +156,10 @@ export class DocumentSync {
     this.debounceMs = options.debounceMs ?? DEFAULT_DEBOUNCE_MS;
     this.maxWaitMs = Math.max(this.debounceMs, options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS);
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+    this.maxPollIntervalMs = Math.max(
+      this.pollIntervalMs,
+      options.maxPollIntervalMs ?? DEFAULT_MAX_POLL_INTERVAL_MS,
+    );
     this.compactThreshold =
       options.compactThreshold ?? DEFAULT_COMPACT_THRESHOLD;
     this.compactLogRatio = options.compactLogRatio;
@@ -189,7 +201,14 @@ export class DocumentSync {
         return;
       }
       this.queued.push(update.slice());
-      this.patch({ status: "saving", pending: this.pendingCount() });
+      if (this.gone) {
+        this.patch({ pending: this.pendingCount() });
+        return;
+      }
+      this.patch({
+        status: this.retryTimer === undefined ? "saving" : "waiting",
+        pending: this.pendingCount(),
+      });
       this.scheduleFlush();
     };
     this.doc.on("update", this.updateHandler);
@@ -198,32 +217,45 @@ export class DocumentSync {
     this.compactIfDue();
   }
 
-  async pull(options: { coldStart?: boolean } = {}): Promise<number> {
+  async pull(
+    options: { coldStart?: boolean; refreshes?: number } = {},
+  ): Promise<number> {
     const dek = this.requireDek();
     const since = this.state.cursor;
+    const refreshes = options.refreshes ?? 0;
 
-    let updates: DocumentUpdateRecord[];
+    let page: UpdatesPage;
     try {
-      updates = await this.transport.fetchUpdates(this.id, since, {
-        expectFollowing: options.coldStart !== true,
-      });
+      page = await this.transport.fetchUpdates(this.id, since);
+    } catch (error) {
+      if (error instanceof RevisionChangedError) {
+        return this.refreshHead(refreshes + 1);
+      }
+      if (isGone(error)) {
+        this.markGone();
+      }
+      this.latchGap(error);
+      throw error;
+    }
+
+    if (page.revision !== this.state.revision) {
+      return this.refreshHead(refreshes + 1);
+    }
+
+    try {
       if (options.coldStart === true) {
-        assertLogFollows(updates, this.state.snapshotSeq);
-        this.logBase = updates.length > 0 ? updates[0].seq - 1 : 0;
+        assertLogFollows(page.updates, this.state.snapshotSeq);
+        this.logBase = page.updates.length > 0 ? page.updates[0].seq - 1 : 0;
+      } else {
+        assertContiguous(page.updates, { after: since });
       }
     } catch (error) {
-      if (error instanceof SequenceGapError) {
-        this.patch({
-          gapDetected: true,
-          status: "error",
-          error: error.message,
-        });
-      }
+      this.latchGap(error);
       throw error;
     }
 
     let logBytes = this.state.logBytes;
-    for (const update of updates) {
+    for (const update of page.updates) {
       const bytes = await openUpdate(update.ciphertext, dek);
       try {
         Y.applyUpdate(this.doc, bytes, REMOTE_ORIGIN);
@@ -233,43 +265,74 @@ export class DocumentSync {
       }
     }
 
-    this.patch({ cursor: highestSeq(since, updates), logBytes });
-    return updates.length;
+    this.patch({ cursor: highestSeq(since, page.updates), logBytes });
+    return page.updates.length;
   }
 
   async poll(): Promise<boolean> {
-    const meta = (await this.transport.listMeta()).find(
-      (entry) => entry.id === this.id,
-    );
-    if (meta === undefined) {
+    if (this.gone) {
       return false;
     }
-    if (meta.revision !== this.state.revision) {
-      await this.refreshHead();
-      return true;
+    const before = { cursor: this.state.cursor, revision: this.state.revision };
+    try {
+      const applied = await this.pull();
+      return (
+        applied > 0 ||
+        this.state.cursor !== before.cursor ||
+        this.state.revision !== before.revision
+      );
+    } catch (error) {
+      if (isGone(error)) {
+        return false;
+      }
+      throw error;
     }
-    if (meta.latest_seq <= this.state.cursor) {
-      return false;
-    }
-    await this.pull();
-    return true;
   }
 
   startPolling(): () => void {
     this.stopPolling();
-    this.pollTimer = setInterval(
-      () => void this.poll().catch(() => this.markOffline()),
-      this.pollIntervalMs,
-    );
-    this.pollTimer.unref?.();
+    this.polling = true;
+    this.pollDelay = this.pollIntervalMs;
+    this.schedulePoll();
     return () => this.stopPolling();
   }
 
   stopPolling(): void {
+    this.polling = false;
     if (this.pollTimer !== undefined) {
-      clearInterval(this.pollTimer);
+      clearTimeout(this.pollTimer);
       this.pollTimer = undefined;
     }
+  }
+
+  currentPollDelay(): number {
+    return this.pollDelay;
+  }
+
+  private schedulePoll(): void {
+    if (!this.polling || this.destroyed || this.gone) {
+      return;
+    }
+    this.pollTimer = setTimeout(() => {
+      this.pollTimer = undefined;
+      void this.pollOnce();
+    }, this.pollDelay);
+    this.pollTimer.unref?.();
+  }
+
+  private async pollOnce(): Promise<void> {
+    let changed = false;
+    try {
+      changed = await this.poll();
+    } catch (error) {
+      if (this.state.status !== "error") {
+        this.markOffline(error);
+      }
+    }
+    this.pollDelay = changed
+      ? this.pollIntervalMs
+      : Math.min(this.maxPollIntervalMs, this.pollDelay * 2);
+    this.schedulePoll();
   }
 
   async flush(): Promise<void> {
@@ -278,6 +341,9 @@ export class DocumentSync {
       this.debounceTimer = undefined;
     }
     this.waitingSince = undefined;
+    if (this.retryTimer !== undefined || this.gone) {
+      return;
+    }
 
     const running = this.flushing;
     if (running !== undefined) {
@@ -321,7 +387,13 @@ export class DocumentSync {
         });
       } catch (error) {
         this.inFlight = batch;
-        this.markOffline(error);
+        if (isRateLimited(error)) {
+          this.waitToRetry(error.retryAfterSeconds);
+        } else if (isGone(error)) {
+          this.markGone();
+        } else {
+          this.markOffline(error);
+        }
         throw error;
       }
     }
@@ -366,6 +438,10 @@ export class DocumentSync {
       if (error instanceof ApiError && error.code === "CONFLICT") {
         await this.refreshHead();
         return;
+      }
+      if (isRateLimited(error)) {
+        this.compactBlockedUntil =
+          this.now() + (error.retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS) * 1000;
       }
       throw error;
     } finally {
@@ -426,6 +502,7 @@ export class DocumentSync {
 
   async close(): Promise<void> {
     this.stopPolling();
+    this.clearRetry();
     try {
       await this.flush();
       if (!this.compactWhileOpen && this.shouldCompact()) {
@@ -442,6 +519,7 @@ export class DocumentSync {
       this.destroyed ||
       this.compacting !== undefined ||
       this.pendingCount() > 0 ||
+      this.now() < this.compactBlockedUntil ||
       !this.shouldCompact()
     ) {
       return;
@@ -459,6 +537,7 @@ export class DocumentSync {
   destroy(): void {
     this.destroyed = true;
     this.stopPolling();
+    this.clearRetry();
     if (this.debounceTimer !== undefined) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = undefined;
@@ -483,9 +562,22 @@ export class DocumentSync {
       : this.state.cursor;
   }
 
-  private async refreshHead(): Promise<void> {
+  private async refreshHead(refreshes = 1): Promise<number> {
+    if (refreshes > MAX_HEAD_REFRESHES) {
+      throw new Error(
+        "the document keeps being compacted elsewhere while it is read — try again shortly",
+      );
+    }
     const dek = this.requireDek();
-    const record = await this.transport.fetchDocument(this.id);
+    let record: DocumentRecord;
+    try {
+      record = await this.transport.fetchDocument(this.id);
+    } catch (error) {
+      if (isGone(error)) {
+        this.markGone();
+      }
+      throw error;
+    }
     const snapshotBytes = await this.applySnapshot(record, dek);
 
     this.patch({
@@ -495,7 +587,7 @@ export class DocumentSync {
       snapshotBytes,
       logBytes: 0,
     });
-    await this.pull({ coldStart: true });
+    return 1 + (await this.pull({ coldStart: true, refreshes }));
   }
 
   private async applySnapshot(
@@ -596,6 +688,47 @@ export class DocumentSync {
     return this.queued.length + (this.inFlight === undefined ? 0 : 1);
   }
 
+  private latchGap(error: unknown): void {
+    if (error instanceof SequenceGapError) {
+      this.patch({
+        gapDetected: true,
+        status: "error",
+        error: error.message,
+      });
+    }
+  }
+
+  private waitToRetry(retryAfterSeconds: number | undefined): void {
+    this.clearRetry();
+    this.patch({
+      status: "waiting",
+      pending: this.pendingCount(),
+      error: undefined,
+    });
+    this.retryTimer = setTimeout(
+      () => {
+        this.retryTimer = undefined;
+        void this.flush().catch(() => undefined);
+      },
+      (retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS) * 1000,
+    );
+    this.retryTimer.unref?.();
+  }
+
+  private clearRetry(): void {
+    if (this.retryTimer !== undefined) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = undefined;
+    }
+  }
+
+  private markGone(): void {
+    this.gone = true;
+    this.stopPolling();
+    this.clearRetry();
+    this.patch({ status: "gone", pending: this.pendingCount() });
+  }
+
   private markOffline(error?: unknown): void {
     this.patch({
       status: "offline",
@@ -626,4 +759,12 @@ function snapshotCapacity(characters: number): SnapshotCapacity {
   return characters > MAX_SNAPSHOT_CHARACTERS * SNAPSHOT_NEAR_FRACTION
     ? "near"
     : "ok";
+}
+
+function isRateLimited(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.code === "TOO_MANY_REQUESTS";
+}
+
+function isGone(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "NOT_FOUND";
 }

@@ -28,6 +28,7 @@ import { generateMnemonic } from "@/lib/keys";
 import { SessionKeystore } from "@/lib/session";
 import { listTrash, purgeEntries, restoreEntries } from "@/lib/trash";
 import { getMe } from "@/lib/users";
+import { grantPlan } from "./plan";
 
 const MiB = 1 << 20;
 const SIZE = Number(process.env.ZEKKE_E2E_DRIVE_BYTES ?? 1024 * MiB);
@@ -141,6 +142,7 @@ describe("the drive, end to end against an S3 store", () => {
       pin: "482915",
       paranoid: false,
     });
+    await grantPlan(context(owner), "premium_1");
     expected = await digestOf(big.stream());
   }, LONG);
 

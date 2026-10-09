@@ -49,6 +49,8 @@ export const SAVE_STATUS_LABELS: Record<SyncStatus, string> = {
   synced: "All changes saved",
   saving: "Saving…",
   offline: "Offline — changes are kept on this device",
+  waiting: "Saving paused for a moment — changes are kept on this device",
+  gone: "Deleted on another device — changes here are no longer saved",
   error: "Sync paused",
 };
 
@@ -73,7 +75,7 @@ export function saveIndicator(progress: SaveProgress): SaveIndicator {
   if (progress.status === "idle" || progress.status === "loading") {
     return "opening";
   }
-  if (progress.gapDetected || progress.status === "error") {
+  if (progress.gapDetected || progress.status === "error" || progress.status === "gone") {
     return "unsaved";
   }
   if (progress.uploading) {

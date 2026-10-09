@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { feedDocumentMetas } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import type { DragEvent } from 'react';
 import {
   createDocument,
   createDocumentFromSnapshot,
   deleteDocuments,
-  listDocumentsMeta,
   loadDocumentSummaries,
   type DocumentSummary,
 } from '@/lib/documents';
@@ -150,7 +151,7 @@ export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
     void (async () => {
       try {
         const inside = descendantsOf(treeFolders, detailedFolder);
-        const metas = await listDocumentsMeta(context);
+        const metas = await feedDocumentMetas(context);
         const items = metas.filter((meta) => meta.folder_id !== undefined && inside.has(meta.folder_id)).length;
         if (live) {
           setFolderCount({ id: detailedFolder, items });
@@ -171,9 +172,7 @@ export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
       return;
     }
     try {
-      const metas = await listDocumentsMeta(context, {
-        folder: listing === '' ? undefined : listing,
-      });
+      const metas = await feedDocumentMetas(context, listing === '' ? undefined : listing);
       const loaded = tilesOnShelf(await loadDocumentSummaries(context, metas), shelf.kind);
 
       setSummaries(loaded);
@@ -193,6 +192,8 @@ export function DocumentShelfScreen({ shelf }: { shelf: DocumentShelf }) {
   useEffect(() => {
     reloadDocuments.current = () => void load();
   }, [load]);
+
+  useFeedChanges('documents', load);
 
   useEffect(() => {
     setSelecting(false);

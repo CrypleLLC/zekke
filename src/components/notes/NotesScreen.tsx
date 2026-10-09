@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
-import { deleteNotes, listNotes, openNote, type NoteRecord } from '@/lib/notes';
+import { deleteNotes, openNote, type NoteRecord } from '@/lib/notes';
+import { feedNotes } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import { HOME_FOLDER_ID } from '@/lib/folders';
 import {
   NOTE_MINIATURE_TEXT_SHARE,
@@ -57,7 +59,7 @@ export default function NotesScreen() {
 
   const load = useCallback(async () => {
     try {
-      const records = await listNotes(context);
+      const records = await feedNotes(context);
       const opened = await Promise.all(
         records.map(async (record): Promise<OpenedNote> => {
           try {
@@ -85,6 +87,8 @@ export default function NotesScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useFeedChanges('notes', load);
 
   const noteIds = useMemo(() => notes?.map((note) => note.record.id), [notes]);
   const folders = useFolderTabs('notes', noteIds);

@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { feedFiles } from '@/lib/feed';
+import { useFeedChanges } from '@/components/session/useFeed';
 import type { DragEvent } from 'react';
 import { ApiError } from '@/lib/api';
 import {
@@ -16,7 +18,6 @@ import {
   forgetSource,
   forgetSourcesExcept,
   getStorageUsage,
-  listFiles,
   openManifest,
   openRememberedSource,
   recallSource,
@@ -225,7 +226,7 @@ export default function DriveScreen() {
     void (async () => {
       try {
         const inside = descendantsOf(treeFolders, detailedFolder);
-        const records = (await listFiles(context)).filter(
+        const records = (await feedFiles(context)).filter(
           (record) => record.folder_id !== undefined && inside.has(record.folder_id),
         );
         const opened = await Promise.all(records.map((record) => toTile(context, record, false)));
@@ -254,7 +255,7 @@ export default function DriveScreen() {
   useEffect(() => {
     void (async () => {
       try {
-        const everything = await listFiles(context);
+        const everything = await feedFiles(context);
         await forgetSourcesExcept(everything.filter(isResumable).map((record) => record.id));
         void pruneCachedObjects(new Set(everything.map((record) => record.id)));
       } catch {
@@ -269,7 +270,7 @@ export default function DriveScreen() {
     }
     try {
       const [records, storage] = await Promise.all([
-        listFiles(context, { folder: listing === '' ? undefined : listing }),
+        feedFiles(context, listing === '' ? undefined : listing),
         getStorageUsage(context),
       ]);
 
@@ -307,6 +308,8 @@ export default function DriveScreen() {
   useEffect(() => {
     reloadFiles.current = () => void load();
   }, [load]);
+
+  useFeedChanges('files', load);
 
   useEffect(() => {
     setSelecting(false);

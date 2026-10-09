@@ -17,6 +17,7 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
   page?: PageInfo;
+  document?: unknown;
 }
 
 export interface RequestOptions {
@@ -166,6 +167,7 @@ export async function request<T = unknown>(
     message?: string;
     data?: T;
     page?: PageInfo;
+    document?: unknown;
   };
 
   return {
@@ -173,6 +175,7 @@ export async function request<T = unknown>(
     message: envelope.message,
     data: envelope.data as T,
     page: envelope.page,
+    ...(envelope.document === undefined ? {} : { document: envelope.document }),
   };
 }
 

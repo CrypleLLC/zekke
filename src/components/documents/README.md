@@ -434,12 +434,15 @@ Below `docside` the three layers of chrome — title and status, the formatting 
   `text-headline`, and no `max-w-md` — so it takes whatever the buttons leave and truncates. The
   dot is the save state in one glance, from `saveIndicator` in
   [`lib/app/documents.ts`](../../lib/app/documents.ts): **red** as soon as there is a change the
-  server does not have — waiting out the debounce, kept offline, or sync paused; **yellow** while
+  server does not have — waiting out the debounce, kept offline, waiting out a `429`'s
+`Retry-After`, or sync paused — and for a document deleted on another device; **yellow** while
   a push is on its way; **green** once everything written has landed and nothing has changed since;
   grey while the document opens. Red and yellow are told apart by `SyncState.uploading`, because
   `status: "saving"` covers both the wait and the push. Its accessible name and tooltip are
-  `saveIndicatorLabel` — "Changes not saved yet", "Saving…", "All changes saved", or the offline
-  and gap messages `SaveStatus` shows on a wide screen. The word,
+  `saveIndicatorLabel` — "Changes not saved yet", "Saving…", "All changes saved", or the offline,
+  waiting, deleted-elsewhere and gap messages `SaveStatus` shows on a wide screen.
+  `useDocumentSync` polls the open document only while the tab is visible
+  ([`lib/documents` § Following other devices](../../lib/documents/README.md#following-other-devices-one-request-per-open-document)). The word,
   character and page counts are not shown in the slim bar.
 - **Quick return — on touch only.** On a touch device the bar slides away as the reader scrolls
   down and comes back on **any** scroll up of 12px or more, anywhere in the document, not only at

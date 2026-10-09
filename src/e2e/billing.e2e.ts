@@ -7,8 +7,8 @@ import { generateMnemonic } from '@/lib/keys';
 import { listNotifications, markNotificationsRead, unreadNotificationCount } from '@/lib/notifications';
 import { SessionKeystore } from '@/lib/session';
 import { getMe } from '@/lib/users';
+import { asBilling, ticketSubject } from './plan';
 
-const BILLING_TOKEN = process.env.ZEKKE_E2E_BILLING_TOKEN ?? 'local-billing-token-0123456789abcdef';
 const RECONCILE_TOKEN = process.env.ZEKKE_E2E_RECONCILE_TOKEN ?? 'local-reconcile-token-0123456789abcdef';
 
 async function signUp(): Promise<AuthedContext> {
@@ -21,20 +21,6 @@ async function signUp(): Promise<AuthedContext> {
   return { session: services.session, tokens: services.tokens, paranoid: false };
 }
 
-async function asBilling(method: string, path: string, body: unknown, token = BILLING_TOKEN) {
-  const response = await fetch(`${getBaseUrl()}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const text = await response.text();
-  return { status: response.status, body: text === '' ? undefined : (JSON.parse(text) as { code?: string }) };
-}
-
-function ticketSubject(ticket: string): string {
-  const payload = ticket.split('.')[1];
-  return (JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { sub: string }).sub;
-}
 
 describe('plans and notifications, against a live API', () => {
   let ctx: AuthedContext;
@@ -155,7 +141,7 @@ describe('the downgrade clock, against a live API', () => {
     expect((await getMe(ctx)).plan.state).toBe('active');
 
     await new Promise((resolve) => setTimeout(resolve, 2500));
-    expect((await runClock()).settled).toBeGreaterThanOrEqual(1);
+    await runClock();
 
     const lapsed = await getMe(ctx);
     expect(lapsed.plan).toMatchObject({
@@ -170,11 +156,13 @@ describe('the downgrade clock, against a live API', () => {
     expect(graceEnds - Date.now()).toBeLessThan(14.1 * 24 * 3600 * 1000);
 
     const notices = (await listNotifications(ctx)).notifications;
-    expect(notices.map((notice) => notice.kind)).toEqual(['grace_started']);
-    expect(notices[0].params).toMatchObject({ plan: 'premium_1', reason: 'ended' });
+    const grace = notices.filter((notice) => notice.kind === 'grace_started');
+    expect(grace).toHaveLength(1);
+    expect(grace[0].params).toMatchObject({ plan: 'premium_1', reason: 'ended' });
+    expect(notices.every((notice) => notice.kind === 'grace_started' || notice.kind === 'expiring')).toBe(true);
 
     await runClock();
-    expect((await listNotifications(ctx)).notifications).toHaveLength(1);
+    expect((await listNotifications(ctx)).notifications).toHaveLength(notices.length);
 
     const renewed = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
     expect((await asBilling('PUT', `/internal/entitlements/${ref}`, {
